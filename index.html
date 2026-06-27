@@ -1258,7 +1258,14 @@ async function initCloudBase() {
     if (typeof cloudbase === 'undefined') {
       throw new Error('CloudBase SDK 未加载，请检查网络后刷新页面');
     }
-    tcbApp = cloudbase.init({ env: ENV_ID });
+    // esbuild 打包后全局变量可能是 { default: {...} } 而非直接 SDK
+    var cbSdk = cloudbase.default || cloudbase;
+    if (typeof cbSdk.init !== 'function') {
+      console.error('[Init] cloudbase 对象:', cloudbase);
+      console.error('[Init] cloudbase keys:', Object.keys(cloudbase));
+      throw new Error('CloudBase SDK 加载异常：init 方法不存在');
+    }
+    tcbApp = cbSdk.init({ env: ENV_ID });
     console.log('[Init] ✅ SDK 初始化成功');
 
     // Step 2: 匿名登录
