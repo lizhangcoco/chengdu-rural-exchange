@@ -1130,18 +1130,16 @@ body{display:flex;flex-direction:row}
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="cloudbase.bundle.js"></script>
 <script>
 // ========================================
 // 成都农交所 · 生产系统核心逻辑
-// 版本：3.0.0 Production（CloudBase JS SDK 模式）
-// 后端：CloudBase 云数据库 (lizhang-cheshi-d3g6chb4t25222375)
+// 版本：4.0.0 Production（云函数 API 模式）
+// 后端：CloudBase 云函数 dbapi → 云数据库
 // ========================================
 
-const ENV_ID = 'lizhang-cheshi-d3g6chb4t25222375';
+const API_URL = 'https://lizhang-cheshi-d3g6chb4t25222375-1344231784.ap-shanghai.app.tcloudbase.com/api';
 
 // ===== 全局状态 =====
-let tcbApp = null;
 let currentUser = null;
 let orgData = [];
 let applications = [];
@@ -1245,54 +1243,96 @@ function formatValue(v) {
   return String(v);
 }
 
-// ===== CloudBase JS SDK 初始化与数据库封装 =====
+// ===== 云函数 API 模式 =====
 
-// 初始化：SDK 连接云数据库
+// 底层 API 调用
+async function apiCall(params) {
+  var res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params)
+  });
+  var data = await res.json();
+  if (data.code && data.code !== 0) {
+    throw new Error(data.message || 'API error');
+  }
+  return data;
+}
+
+// DB Wrapper（模拟 CloudBase SDK 接口，底层调云函数）
+function createDbWrapper() {
+  function Collection(name) {
+    this._name = name;
+    this._query = {};
+    this._orderBy = null;
+    this._limit = 100;
+    this._skip = 0;
+  }
+  Collection.prototype.where = function(q) { this._query = q || {}; return this; };
+  Collection.prototype.orderBy = function(f, d) { this._orderBy = { field: f, direction: d }; return this; };
+  Collection.prototype.limit = function(n) { this._limit = n; return this; };
+  Collection.prototype.skip = function(n) { this._skip = n; return this; };
+
+  Collection.prototype.get = async function() {
+    var res = await apiCall({
+      action: 'query',
+      collection: this._name,
+      query: this._query,
+      limit: this._limit,
+      skip: this._skip,
+      orderBy: this._orderBy
+    });
+    return { data: res.data || [], requestId: res.requestId || '' };
+  };
+
+  Collection.prototype.add = async function(data) {
+    var res = await apiCall({ action: 'add', collection: this._name, data: data });
+    return { code: 0, ids: res.ids, _id: res._id };
+  };
+
+  Collection.prototype.count = async function() {
+    var res = await apiCall({ action: 'count', collection: this._name, query: this._query });
+    return { total: res.total, data: res.total };
+  };
+
+  Collection.prototype.doc = function(id) {
+    var self = this;
+    return {
+      update: async function(updateData) {
+        var res = await apiCall({ action: 'update', collection: self._name, id: id, data: updateData });
+        return { code: 0, updated: res.updated };
+      },
+      remove: async function() {
+        var res = await apiCall({ action: 'delete', collection: self._name, id: id });
+        return { code: 0, deleted: res.deleted };
+      },
+      get: async function() {
+        var res = await apiCall({ action: 'query', collection: self._name, query: { _id: id }, limit: 1 });
+        return { data: res.data || [] };
+      }
+    };
+  };
+
+  return { collection: function(name) { return new Collection(name); } };
+}
+
+// ===== 初始化：通过云函数 API 连接数据库 =====
 async function initCloudBase() {
   try {
     showLoading(true);
-    console.log('[Init] ===== 开始初始化（CloudBase JS SDK 模式）=====');
+    console.log('[Init] ===== 开始初始化（云函数 API 模式）=====');
 
-    // Step 1: 初始化 SDK
-    console.log('[Init] Step 1: 初始化 CloudBase SDK...');
-    if (typeof cloudbase === 'undefined') {
-      throw new Error('CloudBase SDK 未加载，请检查网络后刷新页面');
-    }
-    // esbuild 打包后全局变量可能是 { default: {...} } 而非直接 SDK
-    var cbSdk = cloudbase.default || cloudbase;
-    if (typeof cbSdk.init !== 'function') {
-      console.error('[Init] cloudbase 对象:', cloudbase);
-      console.error('[Init] cloudbase keys:', Object.keys(cloudbase));
-      throw new Error('CloudBase SDK 加载异常：init 方法不存在');
-    }
-    tcbApp = cbSdk.init({ env: ENV_ID });
-    console.log('[Init] ✅ SDK 初始化成功');
+    db = createDbWrapper();
+    console.log('[Init] 测试 API 连通性...');
 
-    // Step 2: 匿名登录
-    console.log('[Init] Step 2: 匿名登录...');
     try {
-      var auth = tcbApp.auth({ persistence: 'local' });
-      await auth.signInAnonymously();
-      console.log('[Init] ✅ 匿名登录成功');
-    } catch(loginErr) {
-      console.error('[Init] ❌ 匿名登录失败:', loginErr.message || loginErr);
+      var testRes = await db.collection('users_profile').limit(1).get();
+      console.log('[Init] ✅ API 连接正常！返回', testRes.data.length, '条');
+    } catch(testErr) {
+      console.error('[Init] ❌ API 不可用:', testErr.message || testErr);
       showLoading(false);
       var errEl = document.getElementById('loginError');
-      if (errEl) { errEl.textContent = '云服务连接失败：' + (loginErr.message || '请检查网络'); errEl.classList.add('show'); }
-      return false;
-    }
-
-    // Step 3: 测试数据库连通性
-    console.log('[Init] Step 3: 测试云数据库...');
-    try {
-      db = tcbApp.database();
-      var testRes = await db.collection('users_profile').limit(1).get();
-      console.log('[Init] ✅ 云数据库连接正常！测试返回', testRes.data.length, '条');
-    } catch(testErr) {
-      console.error('[Init] ❌ 云数据库不可用:', testErr.message || testErr);
-      showLoading(false);
-      var errEl2 = document.getElementById('loginError');
-      if (errEl2) { errEl2.textContent = '云数据库连接失败：' + (testErr.message || '请刷新页面重试'); errEl2.classList.add('show'); }
+      if (errEl) { errEl.textContent = '服务连接失败：' + (testErr.message || '请刷新页面重试'); errEl.classList.add('show'); }
       return false;
     }
 
@@ -1375,7 +1415,7 @@ async function doLogin() {
   }
   showLoading(true);
   try {
-    // 纯数据库认证：通过 HTTP API 查数据库验证用户名和密码
+    // 通过云函数 API 查数据库验证用户名和密码
     var res = await db.collection('users_profile').where({ username: username, password: password }).limit(1).get();
     console.log('[Login] 数据库查询返回', res.data ? res.data.length : 0, '条记录');
     if (!res.data || res.data.length === 0) {
