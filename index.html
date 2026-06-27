@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>成都农交所 · 农村集体经济组织综合服务平台</title>
-<script src="cloudbase.full.js"></script>
+<script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js"></script>
 <style>
 /* ===== CSS Variables ===== */
 :root {
@@ -1231,13 +1231,17 @@ function formatValue(v) {
 
 async function cbSdkInit() {
   try {
-    cloudbaseApp = cloudbase.init({ env: ENV_ID });
+    if (typeof cloudbase === 'undefined') {
+      console.error('[SDK] ❌ cloudbase 全局对象不存在，SDK 未加载');
+      return false;
+    }
+    cloudbaseApp = cloudbase.init({ env: ENV_ID, region: 'ap-shanghai' });
     authInstance = cloudbaseApp.auth();
     await authInstance.signInAnonymously();
     console.log('[SDK] ✅ 匿名登录成功');
     return true;
   } catch(e) {
-    console.warn('[SDK] ⚠️ 匿名登录失败:', e.message);
+    console.error('[SDK] ❌ 初始化失败:', e.message || e);
     return false;
   }
 }
@@ -1262,9 +1266,7 @@ function createDbWrapper() {
       var queryObj = this._query || {};
       var keys = Object.keys(queryObj);
       if (keys.length > 0) {
-        for (var i = 0; i < keys.length; i++) {
-          q = q.where({ [keys[i]]: queryObj[keys[i]] });
-        }
+        q = q.where(queryObj);
       }
       if (this._orderBy) {
         var dir = this._orderBy[1] === 'asc' ? 'asc' : 'desc';
@@ -1297,9 +1299,7 @@ function createDbWrapper() {
       var queryObj = this._query || {};
       var keys = Object.keys(queryObj);
       if (keys.length > 0) {
-        for (var i = 0; i < keys.length; i++) {
-          q = q.where({ [keys[i]]: queryObj[keys[i]] });
-        }
+        q = q.where(queryObj);
       }
       var res = await q.count();
       return { data: res.total || 0 };
@@ -1308,8 +1308,6 @@ function createDbWrapper() {
       return { data: 0 };
     }
   };
-
-  Collection.prototype.doc = function(id) {
 
   Collection.prototype.doc = function(id) {
     var self = this;
