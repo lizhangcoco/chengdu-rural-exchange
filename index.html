@@ -1116,7 +1116,7 @@ body{display:flex;flex-direction:row}
 // ========================================
 // 成都农交所 · 生产系统核心逻辑
 // 版本：2.1.0 Production（内置数据兜底模式）
-// 后端：CloudBase (lizhang-cheshi-d3g6chb4t25222375) + 本地离线数据
+// 后端：CloudBase 云数据库 (lizhang-cheshi-d3g6chb4t25222375)
 // ========================================
 
 const ENV_ID = 'lizhang-cheshi-d3g6chb4t25222375';
@@ -1133,7 +1133,6 @@ let currentOrgIdx = -1;
 let uploadedFiles = [];
 let selectedFinanceProduct = null;
 let currentListingStep = 1;
-let dbMode = 'unknown'; // 'remote' | 'local' — 初始化后确定
 
 // 金融产品定义
 const FINANCE_PRODUCTS = [
@@ -1228,128 +1227,6 @@ function formatValue(v) {
   return String(v);
 }
 
-// ============================================================
-//  内置演示数据（从 CloudBase 数据库导出，与真实数据完全一致）
-//  当远程 API 不可用时自动启用（网络拦截/离线等场景）
-// ============================================================
-const LOCAL_DATA = {
-  users_profile: [
-    { _id:'2069791636592513025', _openid:'2069791636592513025', username:'admin', password:'admin123',
-      role:'reviewer', displayName:'管理员', orgName:'成都农交所管理员', contact:'管理员',
-      phone:'', district:'成都市', uid:'2069791636592513025',
-      createdAt:'2026-06-24T22:32:00+08:00' },
-    { _id:'0f1c50b96a3c70a700231de351a3e086', username:'org001', password:'123456',
-      role:'org', displayName:'龙泉驿区龙泉街道', orgName:'龙泉驿区龙泉街道农村集体经济组织',
-      shortName:'龙泉驿区龙泉街道', contact:'张建国', phone:'028-8485XXXX',
-      district:'龙泉驿区', orgCode:'NJC-510182-001', status:'active',
-      createdAt:'2026-06-25T00:00:00.000Z' },
-    { _id:'0f1c50b96a3c70a700231de433e55615', username:'org002', password:'123456',
-      role:'org', displayName:'龙泉驿区柏合镇', orgName:'龙泉驿区柏合镇农村集体经济组织',
-      shortName:'龙泉驿区柏合镇', contact:'李秀英', phone:'028-8486XXXX',
-      district:'龙泉驿区', orgCode:'NJC-510182-002', status:'active',
-      createdAt:'2026-06-25T00:00:00.000Z' },
-    { _id:'0f1c50b96a3c70a700231de5324ec208', username:'org003', password:'123456',
-      role:'org', displayName:'温江区柳城街道', orgName:'温江区柳城街道农村集体经济组织',
-      shortName:'温江区柳城街道', contact:'王大明', phone:'028-8271XXXX',
-      district:'温江区', orgCode:'NJC-510182-003', status:'active',
-      createdAt:'2026-06-25T00:00:00.000Z' },
-    { _id:'0f1c50b96a3c70a700231de65ca7ce1c', username:'org004', password:'123456',
-      role:'org', displayName:'温江区万春镇', orgName:'温江区万春镇农村集体经济组织',
-      shortName:'温江区万春镇', contact:'赵丽华', phone:'028-8272XXXX',
-      district:'温江区', orgCode:'NJC-510182-004', status:'active',
-      createdAt:'2026-06-25T00:00:00.000Z' },
-    { _id:'0f1c50b96a3c70a700231de7515b56ab', username:'org005', password:'123456',
-      role:'org', displayName:'青白江区大同街道', orgName:'青白江区大同街道农村集体经济组织',
-      shortName:'青白江区大同街道', contact:'刘文强', phone:'028-8365XXXX',
-      district:'青白江区', orgCode:'NJC-510182-005', status:'active',
-      createdAt:'2026-06-25T00:00:00.000Z' },
-    { _id:'0f1c50b96a3c70a700231de8224fc587', username:'org006', password:'123456',
-      role:'org', displayName:'新都区新都街道', orgName:'新都区新都街道农村集体经济组织',
-      shortName:'新都区新都街道', contact:'陈志刚', phone:'028-8397XXXX',
-      district:'新都区', orgCode:'NJC-510182-006', status:'active',
-      createdAt:'2026-06-25T00:00:00.000Z' }
-  ],
-  organizations: [
-    { _id:'org001', code:'NJC-510182-001', name:'龙泉驿区龙泉街道农村集体经济组织', shortName:'龙泉驿区龙泉街道',
-      type:'村集体', district:'龙泉驿区', districtCode:'510112', address:'龙泉驿区长柏路88号',
-      legalPerson:'张建国', phone:'028-8485XXXX', status:'listed', listedAt:'2026-03-15',
-      equityTotal:12500000, shareCount:12500, growthRate:8.5,
-      assets:[{name:'综合服务楼',type:'building',area:2800,value:8500000},{name:'商铺20间',type:'commercial',area:1200,value:4000000}],
-      factors:{tech:['智慧农业管理系统'],talent:['农业技术员2名'],data:['产权数据平台'],capital:['农商银行授信500万']},
-      seq:1, description:'位于成都市龙泉驿区核心地段，拥有综合服务楼和沿街商铺等优质经营性资产。' },
-    { _id:'org002', code:'NJC-510182-002', name:'龙泉驿区柏合镇农村集体经济组织', shortName:'龙泉驿区柏合镇',
-      type:'镇集体', district:'龙泉驿区', districtCode:'510112', address:'龙泉驿区柏合镇东兴街36号',
-      legalPerson:'李秀英', phone:'028-8486XXXX', status:'listed', listedAt:'2026-03-20',
-      equityTotal:9800000, shareCount:9800, growthRate:12.3,
-      assets:[{name:'农贸市场',type:'market',area:3500,value:6000000},{name:'仓储中心',type:'warehouse',area:2000,value:3800000}],
-      factors:{tech:['电商直播基地'],talent:['运营团队5人'],data:['农产品溯源系统'],capital:['供应链金融300万']},
-      seq:2, description:'以农产品交易和仓储物流为核心业务的镇级集体经济组织。' },
-    { _id:'org003', code:'NJC-510182-003', name:'温江区柳城街道农村集体经济组织', shortName:'温江区柳城街道',
-      type:'街道集体', district:'温江区', districtCode:'510115', address:'温江区柳城街道南凤大道168号',
-      legalPerson:'王大明', phone:'028-8271XXXX', status:'listed', listedAt:'2026-04-01',
-      equityTotal:15200000, shareCount:15200, growthRate:6.8,
-      assets:[{name:'文创园区',type:'industrial',area:5000,value:10000000},{name:'停车场',type:'parking',area:3000,value:5200000}],
-      factors:{tech:['文创数字平台'],talent:['设计师3人'],data:['游客数据分析'],capital:'文旅贷800万'},
-      seq:3, description:'依托温江文创产业优势发展的新型农村集体经济组织。' },
-    { _id:'org004', code:'NJC-510182-004', name:'温江区万春镇农村集体经济组织', shortName:'温江区万春镇',
-      type:'镇集体', district:'温江区', districtCode:'510115', address:'温江区万春镇先锋路99号',
-      legalPerson:'赵丽华', phone:'028-8272XXXX', status:'listed', listedAt:'2026-04-10',
-      equityTotal:8800000, shareCount:8800, growthRate:15.2,
-      assets:[{name:'生态渔场',type:'agricultural',area:'180亩',value:5000000},{name:'农家乐集群',type:'service',area:6000,value:3800000}],
-      factors:{tech:['水产智能监控'],talent:['水产专家2名'],data:['水质监测数据'],capital:'特色农业贷400万'},
-      seq:4, description:'以生态渔业和乡村休闲旅游为特色的现代农业集体经济。' },
-    { _id:'org005', code:'NJC-510182-005', name:'青白江区大同街道农村集体经济组织', shortName:'青白江区大同街道',
-      type:'街道集体', district:'青白江区', districtCode:'510113', address:'青白江区大同镇唐巴路266号',
-      legalPerson:'刘文强', phone:'028-8365XXXX', status:'pending', listedAt:'',
-      equityTotal:6500000, shareCount:6500, growthRate:5.5,
-      assets:[{name:'物流园一期',type:'logistics',area:8000,value:4500000},{name:'标准厂房',type:'industrial',area:4000,value:2000000}],
-      factors:{tech:['物流信息系统'],talent:['物流管理团队'],data:['货运数据平台'],capital:'物流金融600万'},
-      seq:5, description:'依托成都国际铁路港物流优势发展的服务型集体经济组织。' },
-    { _id:'org006', code:'NJC-510182-006', name:'新都区新都街道农村集体经济组织', shortName:'新都区新都街道',
-      type:'街道集体', district:'新都区', districtCode:'510114', address:'新都区新都街道蓉都大道188号',
-      legalPerson:'陈志刚', phone:'028-8397XXXX', status:'draft', listedAt:'',
-      equityTotal:5500000, shareCount:5500, growthRate:0,
-      assets:[{name:'商业综合体',type:'commercial',area:10000,value:5500000}],
-      factors:{tech:'',talent:'',data:'', capital:''},
-      seq:6, description:'正在筹备中的城市近郊商业开发型集体经济组织。' }
-  ],
-  applications: [
-    { _id:'app001', orgId:'org001', orgName:'龙泉驿区龙泉街道农村集体经济组织', type:'挂牌申请',
-      status:'approved', submitTime:'2026-04-01 10:30', reviewTime:'2026-04-02 14:20',
-      reviewer:'管理员', comment:'材料齐全，符合挂牌条件，予以批准。',
-      data:{assets:[{name:'综合服务楼',area:'2800㎡',value:'850万元'},{name:'商铺20间',area:'1200㎡',value:'400万元'}],
-            financeProduct:'普惠涉农贷', amount:'1000万', purpose:'用于综合服务楼升级改造及商铺装修'},
-      attachments:['营业执照.pdf','产权证明.pdf','股东决议.pdf'] },
-    { _id:'app002', orgId:'org002', orgName:'龙泉驿区柏合镇农村集体经济组织', type:'挂牌申请',
-      status:'pending', submitTime:'2026-04-05 09:15', reviewTime:'', reviewer:'', comment:'',
-      data:{assets:[{name:'农贸市场',area:'3500㎡',value:'600万元'},{name:'仓储中心',area:'2000㎡',value:'380万元'}],
-            financeProduct:'农业供应链金融', amount:'500万', purpose:'市场冷链设施扩建'},
-      attachments:['营业执照.pdf','产权证明.pdf'] },
-    { _id:'app003', orgId:'org003', orgName:'温江区柳城街道农村集体经济组织', type:'融资申请',
-      status:'approved', submitTime:'2026-04-10 16:00', reviewTime:'2026-04-11 11:30',
-      reviewer:'管理员', comment:'项目符合乡村振兴方向，同意推荐对接金融机构。',
-      data:{financeProduct:'乡村振兴专项贷', amount:'500万', purpose:'文创园区二期建设', period:'3年'},
-      attachments:['融资申请书.pdf','项目可行性报告.pdf'] }
-  ],
-  news_feed: [
-    { _id:'news001', type:'policy', title:'成都市乡村振兴专项资金申报通知', summary:'2026年度成都市乡村振兴专项资金开始接受申报...',
-      content:'...', source:'市农业农村局', time:'2026-06-20', important:true },
-    { _id:'news002', type:'system', title:'平台完成首批6家组织挂牌审核', summary:'成都农交所平台已完成首批6家农村集体经济组织的挂牌资料审核...',
-      content:'...', source:'成都农交所', time:'2026-06-18', important:false },
-    { _id:'news003', type:'activity', title:'农村集体产权制度改革培训班报名', summary:'定于6月25日举办农村集体产权制度改革专题培训...',
-      content:'...', source:'市农业农村局', time:'2026-06-15', important:false },
-    { _id:'news004', type:'success', title:'龙泉驿区龙泉街道成功获得普惠涉农贷授信', summary:'该组织通过本平台成功获得银行1000万元授信支持...',
-      content:'...', source:'成都农交所', time:'2026-06-10', important:true },
-    { _id:'news005', type:'notice', title:'关于规范农村集体资产流转交易的通知', summary:'为进一步规范农村集体资产流转交易行为，保障农民权益...',
-      content:'...', source:'省农业农村厅', time:'2026-06-05', important:false },
-    { _id:'news006', type:'data', title:'5月全市农村产权交易数据发布', summary:'5月全市共完成农村产权交易项目127个，交易总额达3.2亿元...',
-      content:'...', source:'成都农交所', time:'2026-06-01', important:false },
-    { _id:'news007', type:'policy', title:'四川省农村集体经济组织财务管理新规出台', summary:'省农业农村厅印发《四川省农村集体经济组织财务管理办法》...',
-      content:'...', source:'省农业农村厅', time:'2026-05-28', important:true }
-  ],
-  products: [] // 金融产品动态加载
-};
-
 // ===== CloudBase JS SDK 初始化与匿名登录 =====
 
 async function cbSdkInit() {
@@ -1365,9 +1242,8 @@ async function cbSdkInit() {
   }
 }
 
-// ===== 双模式 DB Wrapper（CloudBase SDK / 本地数据 自动切换）=====
-function createDbWrapper(mode) {
-  mode = mode || dbMode;
+// ===== CloudBase SDK DB Wrapper（纯云端模式）=====
+function createDbWrapper() {
 
   function Collection(name) {
     this._name = name; this._query = {}; this._orderBy = null;
@@ -1379,7 +1255,7 @@ function createDbWrapper(mode) {
   Collection.prototype.skip = function(n) { this._offset = n; return this; };
 
   // ---- SDK 模式：使用 cloudbase.database() API ----
-  Collection.prototype._sdkGet = async function() {
+  Collection.prototype.get = async function() {
     try {
       var coll = cloudbaseApp.database().collection(this._name);
       var q = coll;
@@ -1403,7 +1279,7 @@ function createDbWrapper(mode) {
       return { data: [] };
     }
   };
-  Collection.prototype._sdkAdd = async function(data) {
+  Collection.prototype.add = async function(data) {
     try {
       var coll = cloudbaseApp.database().collection(this._name);
       var arr = Array.isArray(data) ? data : [data];
@@ -1414,7 +1290,7 @@ function createDbWrapper(mode) {
       return { code: -1, error: e.message };
     }
   };
-  Collection.prototype._sdkCount = async function() {
+  Collection.prototype.count = async function() {
     try {
       var coll = cloudbaseApp.database().collection(this._name);
       var q = coll;
@@ -1433,67 +1309,19 @@ function createDbWrapper(mode) {
     }
   };
 
-  // ---- 本地模式：查询内存中的内置数据 ----
-  Collection.prototype._localGet = async function() {
-    var dataset = LOCAL_DATA[this._name];
-    if (!dataset) { console.warn('[Local-DB] 集合不存在:', this._name); return { data: [] }; }
-    var results = dataset.slice();
-    var q = this._query || {};
-    // where 过滤
-    Object.keys(q).forEach(function(k) {
-      results = results.filter(function(r) { return r[k] == q[k]; });
-    });
-    // 排序
-    if (this._orderBy) {
-      var f = this._orderBy[0], d = this._orderBy[1];
-      results.sort(function(a,b) { var va=a[f]||'', vb=b[f]||''; return d===1?va.localeCompare(vb):vb.localeCompare(va); });
-    }
-    // 分页
-    var total = results.length;
-    if (this._offset > 0) results = results.slice(this._offset);
-    if (this._limit < total) results = results.slice(0, this._limit);
-    console.log('[Local-DB]', this._name, '.get() →', results.length, '条');
-    return { data: results };
-  };
-  Collection.prototype._localAdd = async function(data) {
-    var arr = Array.isArray(data) ? data : [data];
-    arr.forEach(function(item) { item._id = item._id || ('local_' + Date.now() + '_' + Math.random().toString(36).substr(2,6));
-      if (!LOCAL_DATA[this._name]) LOCAL_DATA[this._name] = []; LOCAL_DATA[this._name].push(item); }.bind(this));
-    console.log('[Local-DB]', this._name, '.add() → 新增', arr.length, '条');
-    return { code: 0, ids: arr.map(function(i){return i._id;}) };
-  };
-  Collection.prototype._localCount = async function() {
-    var dataset = LOCAL_DATA[this._name];
-    if (!dataset) return { data: 0 };
-    var q = this._query || {};
-    var c = dataset.filter(function(r) { return Object.keys(q).every(function(k){return r[k]==q[k];}); }).length;
-    return { data: c };
-  };
-
-  // ---- 统一接口：根据 mode 选择实现 ----
-  Collection.prototype.get = mode === 'local' ? Collection.prototype._localGet : Collection.prototype._sdkGet;
-  Collection.prototype.add = mode === 'local' ? Collection.prototype._localAdd : Collection.prototype._sdkAdd;
-  Collection.prototype.count = mode === 'local' ? Collection.prototype._localCount : Collection.prototype._sdkCount;
+  Collection.prototype.doc = function(id) {
 
   Collection.prototype.doc = function(id) {
     var self = this;
     return {
       update: async function(updateData) {
-        if (mode === 'local') {
-          var ds = LOCAL_DATA[self._name];
-          if (ds) { var item = ds.find(function(r){return r._id===id;}); if(item) Object.assign(item,updateData); }
-          return {code:0};
-        }
+
         try {
           return await cloudbaseApp.database().collection(self._name).doc(id).update(updateData);
         } catch(e) { return {code:-1, error:e.message}; }
       },
       remove: async function() {
-        if (mode === 'local') {
-          var ds = LOCAL_DATA[self._name];
-          if (ds) LOCAL_DATA[self._name] = ds.filter(function(r){return r._id!==id;});
-          return {code:0};
-        }
+
         try {
           return await cloudbaseApp.database().collection(self._name).doc(id).remove();
         } catch(e) { return {code:-1, error:e.message}; }
@@ -1504,61 +1332,46 @@ function createDbWrapper(mode) {
   return { collection: function(name) { return new Collection(name); } };
 }
 
-// ===== 初始化：自动检测 SDK 连接，失败则切换到本地数据 =====
+// ===== 初始化：CloudBase SDK 连接云数据库（生产级）=====
 async function initCloudBase() {
   try {
     showLoading(true);
-    console.log('[Init] ===== 开始初始化 v3.0（SDK模式 + 本地回退）=====');
+    console.log('[Init] ===== 开始初始化（纯云端模式）=====');
 
     // Step 1: 初始化 CloudBase SDK 并匿名登录
     console.log('[Init] Step 1: 初始化 CloudBase SDK...');
     var sdkOk = await cbSdkInit();
-    if (sdkOk) {
-      console.log('[Init] ✅ SDK 匿名登录成功');
-    } else {
-      console.log('[Init] ⚠️ SDK 登录失败，准备使用本地模式');
-    }
-
-    // Step 2: 创建 SDK db wrapper 并测试连通性
-    if (sdkOk) {
-      db = createDbWrapper('remote');
-      console.log('[Init] Step 2: 测试 SDK 数据库...');
-      try {
-        var testRes = await db.collection('users_profile').limit(1).get();
-        if (testRes.data) {
-          dbMode = 'remote';
-          console.log('[Init] ✅ SDK 数据库连接正常！模式=remote，测试返回', testRes.data.length, '条');
-        } else { throw new Error('SDK test returned no data'); }
-      } catch(testErr) {
-        console.warn('[Init] ⚠️ SDK 数据库不可用:', testErr.message || testErr);
-        sdkOk = false; // 回退到本地
-      }
-    }
-
-    // Step 3: SDK 不可用 → 使用内置数据
     if (!sdkOk) {
-      dbMode = 'local';
-      db = createDbWrapper('local');
-      console.log('[Init] ✅ 已切换至【本地数据模式】— 所有操作使用内置演示数据');
-      console.log('[Init] 内置用户数:', LOCAL_DATA.users_profile.length,
-                  ' 组织数:', LOCAL_DATA.organizations.length,
-                  ' 申请数:', LOCAL_DATA.applications.length);
+      console.error('[Init] CloudBase SDK 匿名登录失败');
+      showLoading(false);
+      var errEl = document.getElementById('loginError');
+      if (errEl) { errEl.textContent = '云服务连接失败，请检查网络或刷新页面'; errEl.classList.add('show'); }
+      return false;
+    }
+    console.log('[Init] ✅ SDK 匿名登录成功');
 
-      // 显示提示
-      setTimeout(function() {
-        showToast('当前使用本地演示模式（远程服务器不可达）', 'info');
-      }, 500);
+    // Step 2: 创建 db wrapper 并测试连通性
+    db = createDbWrapper();
+    console.log('[Init] Step 2: 测试云数据库...');
+    try {
+      var testRes = await db.collection('users_profile').limit(1).get();
+      console.log('[Init] ✅ 云数据库连接正常！测试返回', testRes.data.length, '条');
+    } catch(testErr) {
+      console.error('[Init] ❌ 云数据库不可用:', testErr.message || testErr);
+      showLoading(false);
+      var errEl = document.getElementById('loginError');
+      if (errEl) { errEl.textContent = '云数据库连接失败，请刷新页面重试'; errEl.classList.add('show'); }
+      return false;
     }
 
     showLoading(false);
     return true;
   } catch(e) {
     console.error('[Init] ❌ 初始化异常:', e.message);
-    // 即使异常也回退到本地模式
-    dbMode = 'local';
-    db = createDbWrapper('local');
     showLoading(false);
-    return true;
+    var errEl = document.getElementById('loginError');
+    if (errEl) { errEl.textContent = '系统初始化失败：' + (e.message || '未知错误'); errEl.classList.add('show'); }
+    return false;
   }
 }
 
@@ -1631,7 +1444,7 @@ async function doLogin() {
   showLoading(true);
   try {
     // SDK 模式：先用 SDK auth 登录，再查数据库获取用户信息
-    if (dbMode === 'remote' && authInstance) {
+    if (authInstance) {
       try {
         await authInstance.signInWithPassword({ username: username, password: password });
         console.log('[Login] ✅ SDK 用户名密码登录成功');
@@ -1643,28 +1456,22 @@ async function doLogin() {
     // 查数据库获取用户记录
     var res = await db.collection('users_profile').where({ username: username, password: password }).get();
     if (res.data.length === 0) {
-      // 尝试只用 username 查询（远程数据可能不存密码字段）
-      if (dbMode === 'remote') {
-        var res2 = await db.collection('users_profile').where({ username: username }).get();
-        if (res2.data.length > 0) {
-          // SDK auth 已经验证了密码，数据库记录不含密码也能登录
-          var userRec = res2.data[0];
-          currentUser = {
-            _id: userRec._id,
-            username: userRec.username,
-            role: userRec.role || 'org',
-            orgId: userRec.orgId || null,
-            orgCode: userRec.orgCode || null,
-            displayName: userRec.displayName || userRec.username,
-            avatar: userRec.avatar || '农',
-            phone: userRec.phone || '',
-            orgName: userRec.orgName || '',
-          };
-        } else {
-          if (errEl) { errEl.textContent = '用户名或密码错误'; errEl.classList.add('show'); }
-          showLoading(false);
-          return;
-        }
+      // 尝试只用 username 查询（SDK auth 已验证密码）
+      var res2 = await db.collection('users_profile').where({ username: username }).get();
+      if (res2.data.length > 0) {
+        // SDK auth 已经验证了密码，数据库记录不含密码也能登录
+        var userRec = res2.data[0];
+        currentUser = {
+          _id: userRec._id,
+          username: userRec.username,
+          role: userRec.role || 'org',
+          orgId: userRec.orgId || null,
+          orgCode: userRec.orgCode || null,
+          displayName: userRec.displayName || userRec.username,
+          avatar: userRec.avatar || '农',
+          phone: userRec.phone || '',
+          orgName: userRec.orgName || '',
+        };
       } else {
         if (errEl) { errEl.textContent = '用户名或密码错误'; errEl.classList.add('show'); }
         showLoading(false);
