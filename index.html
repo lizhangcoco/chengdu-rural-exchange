@@ -7,7 +7,6 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>成都农交所 · 农村集体经济组织综合服务平台</title>
-<script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js"></script>
 <style>
 /* ===== CSS Variables ===== */
 :root {
@@ -1139,10 +1138,10 @@ body{display:flex;flex-direction:row}
 // ========================================
 
 const ENV_ID = 'lizhang-cheshi-d3g6chb4t25222375';
+const TCB_API = 'https://tcb-api.tencentcloudapi.com/web';
 
 // ===== 全局状态 =====
-let cloudbaseApp = null;   // CloudBase SDK app instance
-let authInstance = null;    // CloudBase auth instance
+let tcbAccessToken = null;
 let currentUser = null;
 let orgData = [];
 let applications = [];
@@ -1246,26 +1245,43 @@ function formatValue(v) {
   return String(v);
 }
 
-// ===== CloudBase JS SDK 初始化与匿名登录 =====
+// ===== CloudBase HTTP API 直接调用（不依赖 SDK）=====
 
-async function cbSdkInit() {
-  try {
-    if (typeof cloudbase === 'undefined') {
-      console.error('[SDK] ❌ cloudbase 全局对象不存在，SDK 未加载');
-      return false;
-    }
-    cloudbaseApp = cloudbase.init({ env: ENV_ID, region: 'ap-shanghai' });
-    authInstance = cloudbaseApp.auth();
-    await authInstance.signInAnonymously();
-    console.log('[SDK] ✅ 匿名登录成功');
-    return true;
-  } catch(e) {
-    console.error('[SDK] ❌ 初始化失败:', e.message || e);
-    return false;
+// 底层 HTTP 请求
+async function tcbRequest(action, params) {
+  var url = TCB_API + '?env=' + ENV_ID;
+  var headers = { 'Content-Type': 'application/json' };
+  if (tcbAccessToken) headers['Authorization'] = 'Bearer ' + tcbAccessToken;
+
+  var body = JSON.stringify(Object.assign({
+    action: action,
+    env: ENV_ID,
+    dataVersion: '2020-01-10'
+  }, params || {}));
+
+  var res = await fetch(url, { method: 'POST', headers: headers, body: body });
+  var data = await res.json();
+
+  if (data.code) {
+    var errMsg = data.message || data.error || ('CloudBase error code: ' + data.code);
+    console.error('[TCB] ' + action + ' failed:', data);
+    throw new Error(errMsg);
   }
+  return data;
 }
 
-// ===== CloudBase SDK DB Wrapper（纯云端模式）=====
+// 匿名登录
+async function tcbAnonymousLogin() {
+  var res = await tcbRequest('auth.signInAnonymously');
+  if (res.access_token) {
+    tcbAccessToken = res.access_token;
+    console.log('[TCB] ✅ 匿名登录成功, uid:', res.uid);
+    return true;
+  }
+  throw new Error('匿名登录未返回 access_token');
+}
+
+// ===== DB Wrapper（基于 HTTP API）=====
 function createDbWrapper() {
 
   function Collection(name) {
@@ -1277,71 +1293,65 @@ function createDbWrapper() {
   Collection.prototype.limit = function(n) { this._limit = n; return this; };
   Collection.prototype.skip = function(n) { this._offset = n; return this; };
 
-  // ---- SDK 模式：使用 cloudbase.database() API ----
   Collection.prototype.get = async function() {
-    try {
-      var coll = cloudbaseApp.database().collection(this._name);
-      var q = coll;
-      var queryObj = this._query || {};
-      var keys = Object.keys(queryObj);
-      if (keys.length > 0) {
-        q = q.where(queryObj);
-      }
-      if (this._orderBy) {
-        var dir = this._orderBy[1] === 'asc' ? 'asc' : 'desc';
-        q = q.orderBy(this._orderBy[0], dir);
-      }
-      if (this._limit) q = q.limit(this._limit);
-      if (this._offset) q = q.skip(this._offset);
-      var res = await q.get();
-      return { data: res.data || [] };
-    } catch(e) {
-      console.warn('[SDK-DB] get失败:', this._name, e.message);
-      return { data: [] };
+    var params = { collectionName: this._name, queryType: 'WHERE' };
+    var queryObj = this._query || {};
+    var keys = Object.keys(queryObj);
+    if (keys.length > 0) params.query = queryObj;
+    if (this._limit) params.limit = this._limit;
+    if (this._offset) params.skip = this._offset;
+    if (this._orderBy) {
+      var dir = this._orderBy[1] === 'asc' ? 'asc' : 'desc';
+      params.order = [{ field: this._orderBy[0], direction: dir }];
     }
+
+    var res = await tcbRequest('database.queryDocument', params);
+    // 响应格式: { data: [...docs...], requestId: "..." } 或 { data: { list: [...], total: N } }
+    var docs = [];
+    if (Array.isArray(res.data)) docs = res.data;
+    else if (res.data && Array.isArray(res.data.list)) docs = res.data.list;
+    else if (res.data && Array.isArray(res.data.data)) docs = res.data.data;
+    else if (res.list) docs = res.list;
+    return { data: docs, requestId: res.requestId };
   };
+
   Collection.prototype.add = async function(data) {
-    try {
-      var coll = cloudbaseApp.database().collection(this._name);
-      var arr = Array.isArray(data) ? data : [data];
-      var res = await coll.add(arr);
-      return { code: 0, ids: res.ids || [] };
-    } catch(e) {
-      console.warn('[SDK-DB] add失败:', this._name, e.message);
-      return { code: -1, error: e.message };
-    }
+    var arr = Array.isArray(data) ? data : [data];
+    var params = { collectionName: this._name, data: arr };
+    var res = await tcbRequest('database.addDocument', params);
+    var ids = [];
+    if (res.data && res.data.insertedIds) ids = res.data.insertedIds;
+    else if (res.insertedIds) ids = res.insertedIds;
+    else if (res.data && res.data.id) ids = [res.data.id];
+    else if (res.id) ids = [res.id];
+    return { code: 0, ids: ids, _id: ids[0] };
   };
+
   Collection.prototype.count = async function() {
-    try {
-      var coll = cloudbaseApp.database().collection(this._name);
-      var q = coll;
-      var queryObj = this._query || {};
-      var keys = Object.keys(queryObj);
-      if (keys.length > 0) {
-        q = q.where(queryObj);
-      }
-      var res = await q.count();
-      return { data: res.total || 0 };
-    } catch(e) {
-      console.warn('[SDK-DB] count失败:', this._name, e.message);
-      return { data: 0 };
-    }
+    var params = { collectionName: this._name, queryType: 'WHERE' };
+    var queryObj = this._query || {};
+    var keys = Object.keys(queryObj);
+    if (keys.length > 0) params.query = queryObj;
+
+    var res = await tcbRequest('database.countDocument', params);
+    var total = 0;
+    if (res.data && typeof res.data.total === 'number') total = res.data.total;
+    else if (typeof res.total === 'number') total = res.total;
+    return { data: total, total: total };
   };
 
   Collection.prototype.doc = function(id) {
     var self = this;
     return {
       update: async function(updateData) {
-
-        try {
-          return await cloudbaseApp.database().collection(self._name).doc(id).update(updateData);
-        } catch(e) { return {code:-1, error:e.message}; }
+        var params = { collectionName: self._name, queryType: 'DOC', _id: id, data: updateData };
+        var res = await tcbRequest('database.updateDocument', params);
+        return { code: 0, updated: (res.data && res.data.updated) || res.updated || 1 };
       },
       remove: async function() {
-
-        try {
-          return await cloudbaseApp.database().collection(self._name).doc(id).remove();
-        } catch(e) { return {code:-1, error:e.message}; }
+        var params = { collectionName: self._name, queryType: 'DOC', _id: id };
+        var res = await tcbRequest('database.deleteDocument', params);
+        return { code: 0, deleted: (res.data && res.data.deleted) || res.deleted || 1 };
       }
     };
   };
@@ -1349,35 +1359,36 @@ function createDbWrapper() {
   return { collection: function(name) { return new Collection(name); } };
 }
 
-// ===== 初始化：CloudBase SDK 连接云数据库（生产级）=====
+// ===== 初始化：HTTP API 连接云数据库 =====
 async function initCloudBase() {
   try {
     showLoading(true);
-    console.log('[Init] ===== 开始初始化（纯云端模式）=====');
+    console.log('[Init] ===== 开始初始化（HTTP API 模式）=====');
 
-    // Step 1: 初始化 CloudBase SDK 并匿名登录
-    console.log('[Init] Step 1: 初始化 CloudBase SDK...');
-    var sdkOk = await cbSdkInit();
-    if (!sdkOk) {
-      console.error('[Init] CloudBase SDK 匿名登录失败');
+    // Step 1: 匿名登录
+    console.log('[Init] Step 1: CloudBase 匿名登录...');
+    try {
+      await tcbAnonymousLogin();
+    } catch(loginErr) {
+      console.error('[Init] ❌ 匿名登录失败:', loginErr.message || loginErr);
       showLoading(false);
       var errEl = document.getElementById('loginError');
-      if (errEl) { errEl.textContent = '云服务连接失败，请检查网络或刷新页面'; errEl.classList.add('show'); }
+      if (errEl) { errEl.textContent = '云服务连接失败：' + (loginErr.message || '请检查网络'); errEl.classList.add('show'); }
       return false;
     }
-    console.log('[Init] ✅ SDK 匿名登录成功');
+    console.log('[Init] ✅ 匿名登录成功');
 
-    // Step 2: 创建 db wrapper 并测试连通性（用原生 SDK 测试，避免错误被吞）
+    // Step 2: 创建 db wrapper 并测试连通性
     db = createDbWrapper();
     console.log('[Init] Step 2: 测试云数据库...');
     try {
-      var testRes = await cloudbaseApp.database().collection('users_profile').limit(1).get();
-      console.log('[Init] ✅ 云数据库连接正常！测试返回', testRes.data ? testRes.data.length : 0, '条');
+      var testRes = await db.collection('users_profile').limit(1).get();
+      console.log('[Init] ✅ 云数据库连接正常！测试返回', testRes.data.length, '条');
     } catch(testErr) {
       console.error('[Init] ❌ 云数据库不可用:', testErr.message || testErr);
       showLoading(false);
-      var errEl = document.getElementById('loginError');
-      if (errEl) { errEl.textContent = '云数据库连接失败：' + (testErr.message || '请刷新页面重试'); errEl.classList.add('show'); }
+      var errEl2 = document.getElementById('loginError');
+      if (errEl2) { errEl2.textContent = '云数据库连接失败：' + (testErr.message || '请刷新页面重试'); errEl2.classList.add('show'); }
       return false;
     }
 
@@ -1386,8 +1397,8 @@ async function initCloudBase() {
   } catch(e) {
     console.error('[Init] ❌ 初始化异常:', e.message);
     showLoading(false);
-    var errEl = document.getElementById('loginError');
-    if (errEl) { errEl.textContent = '系统初始化失败：' + (e.message || '未知错误'); errEl.classList.add('show'); }
+    var errEl3 = document.getElementById('loginError');
+    if (errEl3) { errEl3.textContent = '系统初始化失败：' + (e.message || '未知错误'); errEl3.classList.add('show'); }
     return false;
   }
 }
@@ -1460,17 +1471,15 @@ async function doLogin() {
   }
   showLoading(true);
   try {
-    // 纯数据库认证：匿名登录后直接查数据库验证用户名和密码
-    // 不调用 signInWithPassword（会破坏匿名登录状态）
-    var rawDb = cloudbaseApp.database();
-    var rawRes = await rawDb.collection('users_profile').where({ username: username, password: password }).limit(1).get();
-    console.log('[Login] 数据库查询返回', rawRes.data ? rawRes.data.length : 0, '条记录');
-    if (!rawRes.data || rawRes.data.length === 0) {
+    // 纯数据库认证：通过 HTTP API 查数据库验证用户名和密码
+    var res = await db.collection('users_profile').where({ username: username, password: password }).limit(1).get();
+    console.log('[Login] 数据库查询返回', res.data ? res.data.length : 0, '条记录');
+    if (!res.data || res.data.length === 0) {
       if (errEl) { errEl.textContent = '用户名或密码错误'; errEl.classList.add('show'); }
       showLoading(false);
       return;
     }
-    var userRec = rawRes.data[0];
+    var userRec = res.data[0];
     currentUser = {
       _id: userRec._id,
       username: userRec.username,
