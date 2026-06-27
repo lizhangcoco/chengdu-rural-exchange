@@ -1065,6 +1065,7 @@ body{display:flex;flex-direction:row}
   <div class="review-tabs" style="display:flex;gap:0;border-bottom:2px solid var(--border-light);margin-bottom:20px">
     <button class="review-tab active" onclick="switchReviewTab('listing',this)">📝 挂牌申请 <span class="tab-badge" id="listingPendingCount">0</span></button>
     <button class="review-tab" onclick="switchReviewTab('finance',this)">🏦 投融资申请 <span class="tab-badge" id="financePendingCount">0</span></button>
+    <button class="review-tab" onclick="switchReviewTab('factor',this)">🔬 要素对接申请 <span class="tab-badge" id="factorPendingCount">0</span></button>
   </div>
   <div id="reviewListingPanel">
     <div class="empty-state" id="listingReviewEmpty" style="text-align:center;padding:60px 20px;color:var(--text-light)">暂无待审核的挂牌申请</div>
@@ -1073,6 +1074,10 @@ body{display:flex;flex-direction:row}
   <div id="reviewFinancePanel" style="display:none">
     <div class="empty-state" id="financeReviewEmpty" style="text-align:center;padding:60px 20px;color:var(--text-light)">暂无待审核的投融资申请</div>
     <div id="financeReviewList"></div>
+  </div>
+  <div id="reviewFactorPanel" style="display:none">
+    <div class="empty-state" id="factorReviewEmpty" style="text-align:center;padding:60px 20px;color:var(--text-light)">暂无待审核的要素对接申请</div>
+    <div id="factorReviewList"></div>
   </div>
 </section>
 
@@ -1105,6 +1110,20 @@ body{display:flex;flex-direction:row}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeAssetEditModal()">取消</button>
       <button class="btn btn-primary btn-lg" onclick="saveAssetEdit()">保存修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- 要素详情弹窗 -->
+<div class="modal-overlay" id="factorDetailModal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>📋 要素资源详情</h3>
+      <button class="modal-close" onclick="closeFactorDetailModal()">✕</button>
+    </div>
+    <div class="modal-body" id="factorDetailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeFactorDetailModal()">关闭</button>
     </div>
   </div>
 </div>
@@ -2101,27 +2120,17 @@ function renderFinanceApplicationForm() {
 // ===== 城乡要素市场 =====
 async function loadFactorCounts() {
   try {
-    // 从 orgData 的 factors 字段提取要素数量（本地数据和远程数据统一处理）
     var counts = { tech:0, talent:0, data:0, capital:0 };
     var totalItems = 0;
-    for (var i = 0; i < orgData.length; i++) {
-      var factors = orgData[i].factors || {};
-      for (var t = 0; t < FACTOR_TYPES.length; t++) {
-        var ft = FACTOR_TYPES[t];
-        var items = factors[ft];
-        if (!items) continue;
-        if (typeof items === 'string' && items) { counts[ft]++; totalItems++; }
-        else if (Array.isArray(items)) { counts[ft] += items.length; totalItems += items.length; }
-      }
-    }
-    // 远程数据也尝试从 factor_items 集合补充
+    // 从 factor_items 集合统计各类型数量
     try {
-      var res = await db.collection('factor_items').get();
-      var remoteItems = res.data || [];
-      for (var i = 0; i < remoteItems.length; i++) {
-        if (counts.hasOwnProperty(remoteItems[i].type)) { counts[remoteItems[i].type]++; totalItems++; }
+      var res = await db.collection('factor_items').limit(100).get();
+      var items = res.data || [];
+      for (var i = 0; i < items.length; i++) {
+        var ft = items[i].type;
+        if (counts.hasOwnProperty(ft)) { counts[ft]++; totalItems++; }
       }
-    } catch(e) { /* 本地数据模式时 factor_items 不存在，忽略 */ }
+    } catch(e) { console.warn('[Factor] factor_items查询失败', e); }
 
     for (var i = 0; i < FACTOR_TYPES.length; i++) {
       var el = document.getElementById('factor' + FACTOR_TYPES[i].charAt(0).toUpperCase() + FACTOR_TYPES[i].slice(1) + 'Count');
@@ -2162,84 +2171,93 @@ async function loadFactorSubData(type) {
   var tbody = document.querySelector('#factor' + type.charAt(0).toUpperCase() + type.slice(1) + 'Table tbody');
   if (!tbody) return;
 
-  // 从 orgData 提取该类型的要素数据
   var rows = [];
-  for (var i = 0; i < orgData.length; i++) {
-    var org = orgData[i];
-    var factors = org.factors || {};
-    var items = factors[type];
-    if (!items) continue;
-    if (typeof items === 'string' && items) {
-      rows.push({
-        name: items,
-        field: org.district || '—',
-        supplier: '成都市' + (org.district || ''),
-        demandSide: org.shortName || org.name || '—',
-        status: '对接中',
-        date: org.listedAt || '—',
-        orgIdx: i
-      });
-    } else if (Array.isArray(items)) {
-      for (var j = 0; j < items.length; j++) {
-        rows.push({
-          name: items[j],
-          field: org.district || '—',
-          supplier: '成都市' + (org.district || ''),
-          demandSide: org.shortName || org.name || '—',
-          status: '对接中',
-          date: org.listedAt || '—',
-          orgIdx: i
-        });
-      }
-    }
-  }
-  // 远程数据补充（如果 factor_items 集合存在）
+  // 从 factor_items 集合加载该类型的要素数据
   try {
     var res = await db.collection('factor_items').where({ type: type }).orderBy('createdAt', 'desc').limit(50).get();
-    var remoteData = res.data || [];
-    for (var i = 0; i < remoteData.length; i++) {
-      var f = remoteData[i];
-      // 避免重复
-      var isDup = false;
-      for (var j = 0; j < rows.length; j++) {
-        if (rows[j].name === (f.name || '')) { isDup = true; break; }
+    var items = res.data || [];
+    for (var i = 0; i < items.length; i++) {
+      var f = items[i];
+      // 查找对应的组织名称
+      var orgName = f.orgName || '—';
+      if (f.orgCode && !f.orgName) {
+        for (var j = 0; j < orgData.length; j++) {
+          if (orgData[j].code === f.orgCode) { orgName = orgData[j].shortName || orgData[j].name || '—'; break; }
+        }
       }
-      if (!isDup) {
-        rows.push({
-          name: f.name || '—',
-          field: f.field || '—',
-          supplier: f.supplier || '—',
-          demandSide: f.demandSide || '—',
-          status: f.status || '对接中',
-          date: f.date || '—',
-          orgIdx: -1
-        });
-      }
+      rows.push({
+        _id: f._id,
+        name: f.name || '—',
+        field: f.price || '面议',
+        supplier: f.provider || '—',
+        demandSide: orgName,
+        status: f.status === 'available' ? '可用' : (f.status || '对接中'),
+        date: f.createdAt ? new Date(f.createdAt).toLocaleDateString('zh-CN') : '—',
+        desc: f.desc || '',
+        contact: f.contact || '',
+        orgCode: f.orgCode || ''
+      });
     }
-  } catch(e) { /* 本地数据模式，无 factor_items 集合 */ }
+  } catch(e) { console.warn('[Factor] 加载要素子数据失败:', type, e); }
 
   if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:20px">暂无' + typeLabel + '数据，请先挂牌组织并完善要素信息</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:20px">暂无' + typeLabel + '数据</td></tr>';
     return;
   }
   var html = '';
   for (var i = 0; i < rows.length; i++) {
     var f = rows[i];
-    var statusBadge = (f.status === '已完成') ? 'badge-green' : 'badge-orange';
-    var viewBtn = f.orgIdx >= 0 ?
-      '<button class="btn btn-sm btn-outline" onclick="navToOrgDetail(' + f.orgIdx + ')">查看组织</button>' :
-      '<button class="btn btn-sm btn-outline" onclick="showToast(\'详情功能开发中\',\'success\')">查看</button>';
+    var statusBadge = (f.status === '已完成' || f.status === '可用') ? 'badge-green' : 'badge-orange';
     html += '<tr>' +
-      '<td>' + f.name + '</td>' +
+      '<td style="cursor:pointer;color:var(--green-primary);font-weight:500" onclick="showFactorItemDetail(\'' + f._id + '\')">' + f.name + '</td>' +
       '<td>' + f.field + '</td>' +
       '<td>' + f.supplier + '</td>' +
       '<td>' + f.demandSide + '</td>' +
       '<td><span class="badge ' + statusBadge + '">' + f.status + '</span></td>' +
       '<td>' + f.date + '</td>' +
-      '<td>' + viewBtn + '</td>' +
+      '<td><button class="btn btn-sm btn-outline" onclick="showFactorItemDetail(\'' + f._id + '\')">查看详情</button></td>' +
       '</tr>';
   }
   tbody.innerHTML = html;
+
+  // 缓存要素数据供详情使用
+  if (!window._factorItemCache) window._factorItemCache = {};
+  for (var i = 0; i < rows.length; i++) {
+    window._factorItemCache[rows[i]._id] = rows[i];
+  }
+}
+
+// 要素详情弹窗
+function showFactorItemDetail(itemId) {
+  var item = window._factorItemCache && window._factorItemCache[itemId];
+  if (!item) { showToast('详情数据未找到', 'error'); return; }
+  var typeLabel = '';
+  for (var k in FACTOR_TYPE_MAP) { if (FACTOR_TYPE_MAP.hasOwnProperty(k)) {} }
+  var modal = document.getElementById('factorDetailModal');
+  if (!modal) return;
+  var body = document.getElementById('factorDetailBody');
+  if (!body) return;
+  var statusClass = (item.status === '可用' || item.status === '已完成') ? 'badge-green' : 'badge-orange';
+  body.innerHTML =
+    '<div style="margin-bottom:16px">' +
+    '<h3 style="font-size:18px;font-weight:700;color:var(--text-dark);margin-bottom:4px">' + item.name + '</h3>' +
+    '<span class="badge ' + statusClass + '">' + item.status + '</span>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
+    '<div><span style="font-size:11px;color:var(--text-light)">供给方（城市）</span><div style="font-size:14px;font-weight:500">' + item.supplier + '</div></div>' +
+    '<div><span style="font-size:11px;color:var(--text-light)">需求方（农村）</span><div style="font-size:14px;font-weight:500">' + item.demandSide + '</div></div>' +
+    '<div><span style="font-size:11px;color:var(--text-light)">价格/费用</span><div style="font-size:14px;font-weight:500">' + item.field + '</div></div>' +
+    '<div><span style="font-size:11px;color:var(--text-light)">对接日期</span><div style="font-size:14px;font-weight:500">' + item.date + '</div></div>' +
+    '</div>' +
+    (item.desc ? '<div style="margin-bottom:12px"><span style="font-size:11px;color:var(--text-light)">项目描述</span><div style="font-size:13px;color:var(--text-dark);line-height:1.8;padding:10px;background:var(--bg-light);border-radius:var(--radius-sm)">' + item.desc + '</div></div>' : '') +
+    (item.contact ? '<div style="margin-bottom:12px"><span style="font-size:11px;color:var(--text-light)">联系方式</span><div style="font-size:14px;font-weight:500">' + item.contact + '</div></div>' : '') +
+    (item.orgCode ? '<div><span style="font-size:11px;color:var(--text-light)">关联组织代码</span><div style="font-size:13px;color:var(--green-primary)">' + item.orgCode + '</div></div>' : '');
+  modal.style.display = 'flex';
+}
+
+function closeFactorDetailModal() {
+  var modal = document.getElementById('factorDetailModal');
+  if (modal) modal.style.display = 'none';
 }
 
 function addFactorItem(type) {
@@ -2383,21 +2401,22 @@ function switchReviewTab(type, btn) {
   if (btn) btn.classList.add('active');
   var listingPanel = document.getElementById('reviewListingPanel');
   var financePanel = document.getElementById('reviewFinancePanel');
+  var factorPanel = document.getElementById('reviewFactorPanel');
   if (listingPanel) listingPanel.style.display = (type === 'listing') ? 'block' : 'none';
   if (financePanel) financePanel.style.display = (type === 'finance') ? 'block' : 'none';
-  if (type === 'listing') renderReviewList('listing');
-  if (type === 'finance') renderReviewList('finance');
+  if (factorPanel) factorPanel.style.display = (type === 'factor') ? 'block' : 'none';
+  renderReviewList(type);
 }
 
 async function renderReviewList(type) {
   try {
-    var filterType = type === 'listing' ? 'listing' : 'finance';
-    var res = await db.collection('applications').where({ status: 'pending' }).get();
+    // 按 type 和 status 同时过滤
+    var res = await db.collection('applications').where({ status: 'pending', type: type }).get();
     var items = res.data || [];
 
-    var listEl = document.getElementById(type === 'listing' ? 'listingReviewList' : 'financeReviewList');
-    var emptyEl = document.getElementById(type === 'listing' ? 'listingReviewEmpty' : 'financeReviewEmpty');
-    var badgeEl = document.getElementById(type === 'listing' ? 'listingPendingCount' : 'financePendingCount');
+    var listEl = document.getElementById(type + 'ReviewList');
+    var emptyEl = document.getElementById(type + 'ReviewEmpty');
+    var badgeEl = document.getElementById(type + 'PendingCount');
 
     if (badgeEl) badgeEl.textContent = items.length;
     if (emptyEl) emptyEl.style.display = items.length === 0 ? 'block' : 'none';
@@ -2405,18 +2424,41 @@ async function renderReviewList(type) {
 
     if (items.length === 0) return;
 
+    var typeLabels = { listing: '挂牌申请', finance: '投融资申请', factor: '要素对接申请' };
     var html = '';
     for (var i = 0; i < items.length; i++) {
       var app = items[i];
+      // 根据申请类型展示不同信息
+      var detailHtml = '';
+      if (type === 'listing') {
+        detailHtml =
+          '<div class="review-info"><span class="review-label">组织名称</span><span>' + (app.orgName || '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">法定代表人</span><span>' + (app.legalRep || '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">所属区县</span><span>' + (app.district || '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">联系电话</span><span>' + (app.contactPhone || app.phone || '—') + '</span></div>';
+      } else if (type === 'finance') {
+        detailHtml =
+          '<div class="review-info"><span class="review-label">组织名称</span><span>' + (app.orgName || '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">融资金额</span><span>' + (app.amount || app.expectedAmount || '—') + ' 万元</span></div>' +
+          '<div class="review-info"><span class="review-label">融资期限</span><span>' + (app.duration ? app.duration + ' 个月' : '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">资金用途</span><span>' + (app.purpose || app.reason || '—') + '</span></div>';
+      } else if (type === 'factor') {
+        detailHtml =
+          '<div class="review-info"><span class="review-label">要素名称</span><span>' + (app.factorName || app.name || '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">要素类型</span><span>' + (app.factorType || '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">供给方</span><span>' + (app.provider || '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">需求组织</span><span>' + (app.orgName || '—') + '</span></div>';
+      }
       html += '<div class="review-card">' +
         '<div class="review-card-header">' +
-        '<span class="review-card-title">' + (app.orgName || '未知组织') + '</span>' +
+        '<span class="review-card-title">' + (app.orgName || app.factorName || '未知') + '</span>' +
         '<span class="badge badge-orange">待审核</span>' +
         '</div>' +
         '<div class="review-card-body">' +
-        '<div class="review-info"><span class="review-label">申请类型</span><span>' + (app.type === 'listing' ? '挂牌申请' : '投融资申请') + '</span></div>' +
+        '<div class="review-info"><span class="review-label">申请类型</span><span>' + (typeLabels[type] || '—') + '</span></div>' +
         '<div class="review-info"><span class="review-label">申请人</span><span>' + (app.applicant || '—') + '</span></div>' +
         '<div class="review-info"><span class="review-label">申请日期</span><span>' + (app.createdAt ? new Date(app.createdAt).toLocaleDateString('zh-CN') : '—') + '</span></div>' +
+        detailHtml +
         '</div>' +
         '<div class="review-card-actions">' +
         '<button class="btn btn-primary btn-sm" onclick="approveApplication(\'' + app._id + '\',\'' + type + '\')">✅ 通过</button>' +
@@ -2435,7 +2477,35 @@ async function approveApplication(appId, type) {
   if (!confirm('确认通过该申请？')) return;
   showLoading(true);
   try {
-    await db.collection('applications').doc(appId).update({ status: 'approved', reviewedAt: new Date() });
+    await db.collection('applications').doc(appId).update({ status: 'approved', reviewedAt: new Date(), reviewer: currentUser ? currentUser.username : 'admin' });
+
+    // 如果是要素对接申请，自动写入 factor_items 集合
+    if (type === 'factor') {
+      try {
+        // 先获取申请详情
+        var appRes = await db.collection('applications').where({ _id: appId }).get();
+        var app = (appRes.data && appRes.data.length > 0) ? appRes.data[0] : null;
+        if (app) {
+          // 映射 factorType → factor_items.type
+          var typeMap = { 'technology': 'tech', 'talent': 'talent', 'data': 'data', 'capital': 'capital', 'tech': 'tech' };
+          var itemType = typeMap[app.factorType] || app.factorType || 'tech';
+          await db.collection('factor_items').add({
+            name: app.factorName || app.name || '—',
+            type: itemType,
+            provider: app.provider || '—',
+            orgCode: app.orgCode || '',
+            orgName: app.orgName || '',
+            contact: app.contact || app.phone || '',
+            desc: app.desc || app.reason || '',
+            price: app.price || '面议',
+            status: 'available',
+            createdAt: new Date()
+          });
+          console.log('[Review] 要素已写入 factor_items');
+        }
+      } catch(e) { console.warn('[Review] factor_items写入失败:', e); }
+    }
+
     showToast('申请已通过！', 'success');
     renderReviewList(type);
     loadPendingCount();
@@ -2466,12 +2536,23 @@ async function rejectApplication(appId, type) {
 async function loadPendingCount() {
   if (!currentUser || currentUser.role !== 'reviewer') return;
   try {
-    var res = await db.collection('applications').where({ status: 'pending' }).count();
-    var count = res.data || res.total || 0;
-    var badge = document.getElementById('pendingBadge');
-    if (badge) {
-      badge.textContent = count;
-      badge.style.display = count > 0 ? 'block' : 'none';
+    var types = ['listing', 'finance', 'factor'];
+    for (var i = 0; i < types.length; i++) {
+      var res = await db.collection('applications').where({ status: 'pending', type: types[i] }).count();
+      var count = res.data || res.total || 0;
+      var badge = document.getElementById(types[i] + 'PendingCount');
+      if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'inline-block' : 'none';
+      }
+    }
+    // 顶部导航 badge 显示总数
+    var totalRes = await db.collection('applications').where({ status: 'pending' }).count();
+    var totalCount = totalRes.data || totalRes.total || 0;
+    var topBadge = document.getElementById('pendingBadge');
+    if (topBadge) {
+      topBadge.textContent = totalCount;
+      topBadge.style.display = totalCount > 0 ? 'block' : 'none';
     }
   } catch(e) {
     console.error('[Pending] 加载失败：', e);
