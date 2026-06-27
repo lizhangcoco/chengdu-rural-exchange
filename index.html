@@ -1,0 +1,3006 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>成都农交所 · 农村集体经济组织综合服务平台</title>
+<script src="cloudbase.full.js"></script>
+<style>
+/* ===== CSS Variables ===== */
+:root {
+  --green-dark: #0A2E0A;
+  --green-primary: #14731C;
+  --green-mid: #1A5C1A;
+  --green-light: #228B22;
+  --gold-primary: #D97706;
+  --gold-light: #F5C842;
+  --gold-pale: #FFF7E6;
+  --bg-light: #F2F8F2;
+  --bg-white: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --text-dark: #1A1A1A;
+  --text-mid: #444444;
+  --text-gray: #666666;
+  --text-light: #999999;
+  --border-light: #E0E8E0;
+  --border-mid: #CCD8CC;
+  --status-green: #22C55E;
+  --status-orange: #F59E0B;
+  --status-blue: #3B82F6;
+  --status-red: #EF4444;
+  --status-purple: #8B5CF6;
+  --shadow-card: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-hover: 0 4px 20px rgba(0,0,0,0.10);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --sidebar-w: 220px;
+  --font: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;font-family:var(--font);background:#F0F4F0;overflow:hidden}
+body{display:flex;flex-direction:row}
+
+/* ===== Sidebar ===== */
+.sidebar{
+  width:var(--sidebar-w);height:100vh;
+  background:linear-gradient(180deg, #0A2E0A 0%, #0D3B0D 50%, #0F4510 100%);
+  display:flex;flex-direction:column;
+  flex-shrink:0;z-index:10;position:sticky;top:0;
+}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,0.1);}
+.sidebar-logo .logo-icon{
+  width:40px;height:40px;border-radius:var(--radius-sm);
+  background:linear-gradient(135deg, var(--gold-light), var(--gold-primary));
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;color:#0A2E0A;font-weight:700;margin-bottom:10px;
+}
+.sidebar-logo .logo-title{color:#FFFFFF;font-size:15px;font-weight:600;line-height:1.4;}
+.sidebar-logo .logo-sub{color:rgba(255,255,255,0.5);font-size:11px;margin-top:2px;}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 20px;margin:2px 10px;
+  border-radius:var(--radius-sm);
+  color:rgba(255,255,255,0.65);
+  font-size:13px;cursor:pointer;transition:all 0.2s;
+  border:none;background:none;width:calc(100% - 20px);
+  text-align:left;font-family:var(--font);
+}
+.nav-item:hover{color:#FFFFFF;background:rgba(255,255,255,0.08)}
+.nav-item.active{color:#FFFFFF;background:rgba(255,255,255,0.15);font-weight:500}
+.nav-item .nav-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.nav-item .nav-label{white-space:nowrap}
+.nav-divider{height:1px;background:rgba(255,255,255,0.08);margin:8px 20px}
+.nav-section{color:rgba(255,255,255,0.3);font-size:10px;padding:8px 20px 4px;text-transform:uppercase;letter-spacing:1px}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.1)}
+.sidebar-footer .user-info{display:flex;align-items:center;gap:10px}
+.sidebar-footer .user-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--gold-primary);color:#FFFFFF;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:600;
+}
+.sidebar-footer .user-name{color:#FFFFFF;font-size:12px}
+.sidebar-footer .user-role{color:rgba(255,255,255,0.4);font-size:10px}
+
+/* ===== Main Content ===== */
+.main-content{
+  flex:1;height:100vh;overflow-y:auto;overflow-x:hidden;
+  background:var(--bg-light);
+}
+.screen{display:none;padding:28px 36px;animation:fadeIn 0.3s ease;}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== Page Header ===== */
+.page-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;flex-wrap:wrap;gap:12px;
+}
+.page-title{font-size:22px;font-weight:700;color:var(--text-dark)}
+.page-breadcrumb{font-size:12px;color:var(--text-light);margin-bottom:4px}
+.page-breadcrumb span{color:var(--green-primary);cursor:pointer}
+.page-breadcrumb span:hover{text-decoration:underline}
+
+/* ===== Badge ===== */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-green{background:#DCFCE7;color:#166534}
+.badge-gold{background:var(--gold-pale);color:#92400E}
+.badge-blue{background:#DBEAFE;color:#1E40AF}
+.badge-orange{background:#FFF7ED;color:#9A3412}
+.badge-yellow{background:#FEF3C7;color:#92400E}
+.badge-purple{background:#F3E8FF;color:#6B21A8}
+.badge-red{background:#FEE2E2;color:#991B1B}
+
+/* ===== Listing Code ===== */
+.code-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:8px 20px;border-radius:4px;
+  background:linear-gradient(135deg, #050F05 0%, #0A1F0A 50%, #071407 100%);
+  border:1px solid rgba(245,200,66,0.35);
+  color:var(--gold-light);
+  font-size:18px;font-weight:800;letter-spacing:3px;
+  font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  font-feature-settings:"tnum";
+  text-shadow:0 0 12px rgba(245,200,66,0.3);
+  position:relative;overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(245,200,66,0.08);
+}
+.code-badge::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(245,200,66,0.6),transparent);
+}
+.code-badge .njc-tag{
+  color:#FFFFFF;font-weight:800;letter-spacing:2px;
+  padding:3px 7px;border-radius:3px;
+  background:linear-gradient(135deg, #C87606, #D97706, #E8870A);
+  box-shadow:0 2px 4px rgba(217,119,6,0.35);margin-right:4px;font-size:0.95em;
+}
+
+/* ===== Card ===== */
+.card{background:var(--bg-card);border-radius:var(--radius-md);box-shadow:var(--shadow-card);padding:20px;transition:box-shadow 0.2s}
+.card:hover{box-shadow:var(--shadow-hover)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.card-title{font-size:15px;font-weight:600;color:var(--text-dark)}
+
+/* ===== KPI Card ===== */
+.kpi-card{background:var(--bg-card);border-radius:var(--radius-md);box-shadow:var(--shadow-card);padding:20px;border-left:4px solid var(--green-primary);transition:box-shadow 0.2s}
+.kpi-card:hover{box-shadow:var(--shadow-hover)}
+.kpi-card.gold{border-left-color:var(--gold-primary)}
+.kpi-card.blue{border-left-color:var(--status-blue)}
+.kpi-card.purple{border-left-color:var(--status-purple)}
+.kpi-label{font-size:12px;color:var(--text-gray);margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:700;color:var(--text-dark)}
+.kpi-unit{font-size:14px;font-weight:400;color:var(--text-gray);margin-left:4px}
+.kpi-sub{font-size:11px;color:var(--text-light);margin-top:4px}
+
+/* ===== Button ===== */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.2s;font-family:var(--font)}
+.btn-primary{background:var(--green-primary);color:#FFFFFF}
+.btn-primary:hover{background:#105A18}
+.btn-gold{background:var(--gold-primary);color:#FFFFFF}
+.btn-gold:hover{background:#B86404}
+.btn-outline{background:transparent;color:var(--green-primary);border:1.5px solid var(--green-primary)}
+.btn-outline:hover{background:var(--bg-light)}
+.btn-sm{padding:5px 12px;font-size:11px}
+.btn-lg{padding:10px 24px;font-size:14px}
+
+/* ===== Form ===== */
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:13px;font-weight:500;color:var(--text-mid);margin-bottom:6px}
+.form-label .required{color:var(--status-red);margin-left:2px}
+.form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border-mid);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);color:var(--text-dark);background:var(--bg-white);transition:border-color 0.2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--green-primary);box-shadow:0 0 0 3px rgba(20,115,28,0.1)}
+.form-textarea{resize:vertical;min-height:80px}
+.form-hint{font-size:11px;color:var(--text-light);margin-top:4px}
+.form-row{display:flex;gap:16px}
+.form-row .form-group{flex:1}
+
+/* ===== Table ===== */
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{background:var(--bg-light);color:var(--text-gray);font-weight:500;text-align:left;padding:10px 14px;border-bottom:2px solid var(--border-mid);font-size:12px}
+.data-table td{padding:12px 14px;border-bottom:1px solid var(--border-light);color:var(--text-mid)}
+.data-table tr:hover td{background:#FAFFFA}
+
+/* ===== Tabs ===== */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border-light);margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{padding:10px 20px;font-size:13px;font-weight:500;color:var(--text-gray);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s;font-family:var(--font);white-space:nowrap}
+.tab-btn:hover{color:var(--green-primary)}
+.tab-btn.active{color:var(--green-primary);border-bottom-color:var(--green-primary)}
+
+/* ===== Progress Steps ===== */
+.progress-steps{display:flex;align-items:center;gap:0;margin-bottom:24px;padding:0 20px}
+.progress-step{display:flex;align-items:center;gap:8px;flex:1;position:relative}
+.progress-step .step-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;background:var(--border-light);color:var(--text-light)}
+.progress-step.active .step-num{background:var(--green-primary);color:#FFFFFF}
+.progress-step.done .step-num{background:var(--status-green);color:#FFFFFF}
+.progress-step .step-label{font-size:13px;color:var(--text-light);white-space:nowrap}
+.progress-step.active .step-label{color:var(--green-primary);font-weight:500}
+.progress-step.done .step-label{color:var(--status-green)}
+.progress-step .step-line{flex:1;height:2px;background:var(--border-light);margin:0 12px}
+.progress-step.done .step-line{background:var(--status-green)}
+
+/* ===== Toast ===== */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:var(--radius-sm);color:#FFFFFF;font-size:13px;font-weight:500;z-index:10000;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast.show{opacity:1}
+.toast.success{background:#166534}
+.toast.error{background:#991B1B}
+
+/* ===== Org Card (Listing Hall) ===== */
+.org-card{background:var(--bg-white);border-radius:var(--radius-lg);box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid var(--border-light);overflow:hidden;cursor:pointer;transition:all 0.25s ease}
+.org-card:hover{box-shadow:0 8px 30px rgba(0,0,0,0.10);transform:translateY(-3px);border-color:var(--green-primary)}
+.org-card-codebar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:linear-gradient(135deg,#050F05 0%,#0E2D0E 50%,#050F05 100%);border-bottom:1px solid rgba(245,200,66,0.18);position:relative;overflow:hidden}
+.org-card-codebar .code-main{font-family:'Inter','Segoe UI',system-ui,sans-serif;font-feature-settings:"tnum";font-size:16px;font-weight:800;color:var(--gold-light);letter-spacing:2px;text-shadow:0 0 10px rgba(245,200,66,0.25)}
+.org-card-body{padding:16px 18px}
+.org-card-body .org-name{font-size:15px;font-weight:700;color:var(--text-dark);margin-bottom:4px}
+.org-card-body .org-subtitle{font-size:12px;color:var(--text-gray);margin-bottom:10px}
+.org-card-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--border-light);background:#FAFCFA}
+.status-chip.active{background:#DCFCE7;color:#166534;font-size:10px;font-weight:600;padding:3px 10px;border-radius:10px}
+.status-chip.pending{background:#FFF7ED;color:#9A3412}
+
+/* ===== Factor Card ===== */
+.factor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+.factor-card{background:var(--bg-card);border-radius:var(--radius-md);box-shadow:var(--shadow-card);padding:20px 14px;text-align:center;cursor:pointer;transition:all 0.2s;border:2px solid transparent;min-height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.factor-card:hover{box-shadow:var(--shadow-hover);transform:translateY(-2px);border-color:var(--green-primary)}
+.factor-card .fc-icon{font-size:36px;margin-bottom:12px}
+.factor-card .fc-name{font-size:15px;font-weight:600;color:var(--text-dark);margin-bottom:4px}
+.factor-card .fc-count{font-size:24px;font-weight:700;color:var(--green-primary);margin:6px 0}
+.factor-card .fc-desc{font-size:11px;color:var(--text-light)}
+.factor-card .fc-arrow{font-size:10px;color:var(--text-light);margin-top:8px}
+
+/* ===== Finance Product ===== */
+.finance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:20px}
+.finance-product{background:var(--bg-card);border-radius:var(--radius-md);box-shadow:var(--shadow-card);padding:20px;cursor:pointer;transition:all 0.2s;border:2px solid transparent}
+.finance-product:hover{border-color:var(--green-primary);box-shadow:var(--shadow-hover)}
+.finance-product .fp-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.finance-product .fp-icon{width:42px;height:42px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:20px}
+.finance-product .fp-name{font-size:15px;font-weight:600;color:var(--text-dark)}
+.finance-product .fp-desc{font-size:12px;color:var(--text-gray);margin-bottom:12px;line-height:1.6}
+.finance-product .fp-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--text-light)}
+
+/* ===== Review Card ===== */
+.review-tabs{display:flex;gap:0;border-bottom:2px solid var(--border-light);margin-bottom:20px}
+.review-tab{padding:10px 20px;font-size:14px;font-weight:500;color:var(--text-gray);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.2s;font-family:var(--font)}
+.review-tab:hover{color:var(--green-primary)}
+.review-tab.active{color:var(--green-primary);border-bottom-color:var(--green-primary);font-weight:600}
+.review-panel{display:none}
+.review-panel.active{display:block}
+.review-card{background:var(--bg-card);border-radius:var(--radius-md);box-shadow:var(--shadow-card);padding:20px;margin-bottom:14px;border-left:4px solid var(--status-yellow)}
+.review-card .rc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.review-card .rc-title{font-size:15px;font-weight:600;color:var(--text-dark)}
+.review-card .rc-actions{display:flex;gap:8px;justify-content:flex-end}
+.btn-approve{padding:8px 20px;font-size:13px;font-weight:600;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--green-primary);color:#FFF;font-family:var(--font)}
+.btn-reject{padding:8px 20px;font-size:13px;font-weight:600;border:none;border-radius:var(--radius-sm);cursor:pointer;background:#FEE2E2;color:#991B1B;font-family:var(--font)}
+
+/* ===== Step Panel ===== */
+.step-panel{display:none}.step-panel.active{display:block}
+.form-layout{display:grid;grid-template-columns:1fr 300px;gap:20px}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.detail-item{display:flex;flex-direction:column;gap:4px}
+.detail-item .d-label{font-size:11px;color:var(--text-light)}
+.detail-item .d-value{font-size:14px;color:var(--text-dark);font-weight:500}
+
+/* ===== Upload Zone ===== */
+.upload-zone{border:2px dashed var(--border-light);border-radius:var(--radius-md);padding:30px;text-align:center;background:var(--bg-light);cursor:pointer;transition:all 0.2s}
+.upload-zone:hover{border-color:var(--green-primary);background:rgba(20,115,28,0.03)}
+
+/* ===== Factor Subpage ===== */
+.factor-subpage{display:none}.factor-subpage.active{display:block}
+#factorMain.hidden{display:none}
+
+/* ===== Modal ===== */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:#FFF;border-radius:16px;width:90%;max-width:720px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border-light)}
+.modal-header h3{font-size:17px;font-weight:700;color:var(--text-dark)}
+.modal-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--bg-light);cursor:pointer;font-size:16px;color:var(--text-gray);display:flex;align-items:center;justify-content:center}
+.modal-body{padding:24px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;padding:16px 24px;border-top:1px solid var(--border-light)}
+
+/* ===== Empty State ===== */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-light)}
+.empty-state .es-icon{font-size:48px;margin-bottom:12px}
+.empty-state .es-text{font-size:15px;font-weight:500;color:var(--text-gray)}
+
+/* ===== Dashboard Grid ===== */
+.dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:20px}
+
+/* ===== Listing Page ===== */
+.listing-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.listing-toolbar .filter-group{display:flex;gap:8px;align-items:center}
+.listing-toolbar .filter-select{padding:7px 14px;border:1.5px solid var(--border-mid);border-radius:var(--radius-sm);font-size:12px;font-family:var(--font);color:var(--text-mid);background:var(--bg-white);cursor:pointer}
+.listing-toolbar .search-input{padding:7px 14px;border:1.5px solid var(--border-mid);border-radius:var(--radius-sm);font-size:12px;font-family:var(--font);width:200px}
+.listing-stats{font-size:12px;color:var(--text-light)}
+.listing-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+@media (max-width:1200px){.listing-grid{grid-template-columns:1fr}}
+@media (max-width:768px){body{flex-direction:column}.sidebar{width:100%;height:auto;position:relative}.main-content{height:auto}.screen{padding:16px}}
+
+/* ===== Login ===== */
+.login-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:linear-gradient(135deg, #0A2E0A 0%, #1a4a1a 50%, #0F3B0F 100%);
+  z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;
+}
+.login-overlay.hidden{display:none}
+.login-box{
+  position:relative;background:#FFF;border-radius:16px;padding:48px 40px 40px;
+  width:420px;max-width:90vw;box-shadow:0 24px 80px rgba(0,0,0,0.35);
+  animation:loginSlideUp 0.5s ease-out;
+}
+@keyframes loginSlideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:8px;justify-content:center}
+.login-logo-icon{
+  width:48px;height:48px;background:linear-gradient(135deg,#1B5E20,#2E7D32);
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  color:#FFF;font-size:24px;font-weight:800;
+}
+.login-logo-text{font-size:22px;font-weight:700;color:#1B5E20;letter-spacing:1px}
+.login-sub{text-align:center;color:#888;font-size:13px;margin-bottom:32px}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px}
+.login-input{
+  width:100%;padding:12px 16px;border:1.5px solid #E5E7EB;border-radius:10px;
+  font-size:15px;outline:none;transition:border 0.2s;box-sizing:border-box;font-family:inherit;
+}
+.login-input:focus{border-color:#1B5E20;box-shadow:0 0 0 3px rgba(27,94,32,0.1)}
+.login-btn{
+  width:100%;padding:14px;background:linear-gradient(135deg,#1B5E20,#2E7D32);
+  color:#FFF;border:none;border-radius:10px;font-size:16px;font-weight:700;
+  cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;font-family:inherit;
+}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(27,94,32,0.35)}
+.login-error{background:#FEF2F2;color:#DC2626;font-size:13px;padding:10px 14px;border-radius:8px;display:none;margin-bottom:12px}
+.login-error.show{display:block}
+.login-hint{text-align:center;margin-top:20px;font-size:12px;color:#999;line-height:1.8}
+.login-hint strong{color:#666}
+.reg-toggle{text-align:center;margin-top:12px;font-size:13px;color:#888}
+.reg-toggle a{color:#1B5E20;font-weight:600;cursor:pointer;text-decoration:none}
+.reg-toggle a:hover{text-decoration:underline}
+.reg-form{display:none;flex-direction:column;gap:14px}
+.reg-form.show{display:flex}
+.login-form{}
+.login-form.hide{display:none}
+.loading-mask{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.3);z-index:99999;
+  display:flex;align-items:center;justify-content:center;
+}
+.loading-mask.hidden{display:none}
+.loading-spinner{
+  width:40px;height:40px;border:4px solid #FFF;border-top:4px solid var(--green-primary);
+  border-radius:50%;animation:spin 0.8s linear infinite;
+}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* ===== 资产权益详情 ===== */
+.asset-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:20px}
+.code-badge-sm{font-size:14px;padding:5px 12px;letter-spacing:2px}
+/* ===== 融资申请预估卡 ===== */
+.estimate-card{background:linear-gradient(135deg, var(--green-dark), var(--green-mid));border-radius:var(--radius-md);padding:20px;color:#FFFFFF}
+.estimate-card h4{color:var(--gold-light);margin-bottom:14px;font-size:15px}
+.estimate-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1);font-size:13px}
+.estimate-item:last-child{border-bottom:none}
+.estimate-item .ei-val{font-weight:600}
+/* ===== 系统说明 ===== */
+.system-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:20px}
+.sys-card{background:var(--bg-card);border-radius:var(--radius-md);box-shadow:var(--shadow-card);padding:20px;text-align:center;border-top:3px solid var(--green-primary)}
+.sys-card h4{font-size:14px;font-weight:600;margin:10px 0 6px;color:var(--text-dark)}
+.sys-card p{font-size:12px;color:var(--text-gray);line-height:1.5}
+.sys-card .sys-icon{font-size:28px}
+/* ===== 投融资产品关联条 ===== */
+.product-context-bar{background:linear-gradient(135deg,#F0FDF4,#ECFDF5);border:1px solid #D1FAE5;border-radius:var(--radius-md);padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.product-context-bar .pcb-left{display:flex;align-items:center;gap:10px}
+.product-context-bar .pcb-icon{font-size:24px}
+.product-context-bar .pcb-info{line-height:1.5}
+.product-context-bar .pcb-name{font-size:15px;font-weight:700;color:var(--green-dark)}
+.product-context-bar .pcb-detail{font-size:12px;color:var(--text-gray)}
+.product-context-bar .pcb-tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:#DCFCE7;color:var(--green-dark)}
+.product-context-bar .pcb-clear{font-size:12px;color:var(--text-gray);cursor:pointer;text-decoration:underline}
+.product-context-bar .pcb-clear:hover{color:var(--green-primary)}
+/* ===== 投融资面板 ===== */
+.invest-tabs{display:flex;gap:0;border-bottom:2px solid var(--border-light);margin-bottom:20px}
+.invest-tab{padding:10px 24px;font-size:14px;font-weight:500;color:var(--text-gray);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.2s;font-family:var(--font)}
+.invest-tab:hover{color:var(--green-primary)}
+.invest-tab.active{color:var(--green-primary);border-bottom-color:var(--green-primary);font-weight:600}
+.invest-panel{display:none}
+.invest-panel.active{display:block}
+/* ===== 表格内编辑按钮 ===== */
+.btn-edit-row{padding:3px 10px;font-size:11px;background:var(--bg-light);color:var(--green-primary);border:1px solid var(--border-light);border-radius:4px;cursor:pointer;font-family:var(--font)}
+.btn-edit-row:hover{background:var(--border-light)}
+.btn-edit-row.danger{color:var(--status-red)}
+.btn-edit-row.danger:hover{background:#FEE2E2;border-color:#FECACA}
+/* 只读提示条 */
+.readonly-notice{display:flex;align-items:center;gap:8px;background:#F0FDF4;border:1px dashed #86EFAC;border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:12px;font-size:12px;color:var(--green-primary)}
+.readonly-notice .rn-icon{font-size:14px}
+.readonly-notice strong{font-weight:600}
+
+</style>
+</head>
+<body>
+
+<!-- Loading Mask -->
+<div class="loading-mask" id="loadingMask"><div class="loading-spinner"></div></div>
+
+<!-- Login Overlay -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">农</div>
+      <div class="login-logo-text">成都农交所</div>
+    </div>
+    <div class="login-sub" id="loginSub">农村集体经济组织综合服务平台</div>
+    
+    <!-- Register Form -->
+    <div class="reg-form" id="regForm">
+      <div class="login-field">
+        <label>用户名 <span style="color:#DC2626">*</span></label>
+        <input type="text" id="regUsername" class="login-input" placeholder="设置登录用户名（至少3个字符）" autocomplete="off">
+      </div>
+      <div class="login-field">
+        <label>密码 <span style="color:#DC2626">*</span></label>
+        <input type="password" id="regPassword" class="login-input" placeholder="设置登录密码（至少4位）" autocomplete="new-password">
+      </div>
+      <div class="login-field">
+        <label>确认密码 <span style="color:#DC2626">*</span></label>
+        <input type="password" id="regPassword2" class="login-input" placeholder="再次输入密码" autocomplete="new-password">
+      </div>
+      <div class="login-field">
+        <label>组织全称 <span style="color:#DC2626">*</span></label>
+        <input type="text" id="regOrgName" class="login-input" placeholder="如：XX区XX镇农村集体经济组织" autocomplete="off">
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="login-field" style="flex:1">
+          <label>简称 <span style="color:#DC2626">*</span></label>
+          <input type="text" id="regShortName" class="login-input" placeholder="如：XX区XX镇" autocomplete="off">
+        </div>
+        <div class="login-field" style="flex:1">
+          <label>联系人 <span style="color:#DC2626">*</span></label>
+          <input type="text" id="regContact" class="login-input" placeholder="联系人姓名" autocomplete="off">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="login-field" style="flex:1">
+          <label>所属区/县 <span style="color:#DC2626">*</span></label>
+          <input type="text" id="regDistrict" class="login-input" placeholder="如：成都市锦江区" autocomplete="off">
+        </div>
+        <div class="login-field" style="flex:1">
+          <label>联系电话</label>
+          <input type="text" id="regPhone" class="login-input" placeholder="联系电话" autocomplete="off">
+        </div>
+      </div>
+      <div class="login-error" id="regError"></div>
+      <button class="login-btn" onclick="doRegister()">注 册</button>
+      <div style="text-align:center;font-size:13px;color:#888">
+        <a onclick="showLoginForm()" style="color:#1B5E20;cursor:pointer">← 返回登录</a>
+      </div>
+    </div>
+    
+    <!-- Login Form -->
+    <div class="login-form" id="loginFormArea">
+      <div class="login-field">
+        <label>用户名</label>
+        <input type="text" id="loginUsername" class="login-input" placeholder="请输入用户名" autocomplete="username">
+      </div>
+      <div class="login-field">
+        <label>密码</label>
+        <input type="password" id="loginPassword" class="login-input" placeholder="请输入密码" autocomplete="current-password">
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button class="login-btn" onclick="doLogin()">登 录</button>
+    </div>
+    <div class="reg-toggle" id="regToggle">
+      还没有账户？<a onclick="showRegForm()">立即注册</a>
+    </div>
+    <div class="login-hint" id="loginHint">
+      <strong>演示账户</strong><br>
+      审核员：admin / admin123<br>
+      <span style="font-size:11px;color:#AAA">或点击"立即注册"创建新组织账户</span>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">农</div>
+    <div class="logo-title">成都农交所</div>
+    <div class="logo-sub">农村集体经济组织综合服务平台</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">平台概览</div>
+    <button class="nav-item active" data-screen="0" onclick="navTo(0)">
+      <span class="nav-icon">📊</span><span class="nav-label">平台主仪表盘</span>
+    </button>
+    <div class="nav-section">核心业务</div>
+    <button class="nav-item" data-screen="1" onclick="navTo(1)">
+      <span class="nav-icon">🏛</span><span class="nav-label">挂牌大厅</span>
+    </button>
+    <button class="nav-item" data-screen="4" onclick="navTo(4)">
+      <span class="nav-icon">📈</span><span class="nav-label">城乡要素市场</span>
+    </button>
+    <button class="nav-item" data-screen="3" onclick="navTo(3)">
+      <span class="nav-icon">💰</span><span class="nav-label">投融资服务</span>
+    </button>
+    <div class="nav-section">业务办理</div>
+    <button class="nav-item" data-screen="6" onclick="navTo(6)">
+      <span class="nav-icon">📝</span><span class="nav-label">申请挂牌</span>
+    </button>
+    <button class="nav-item" data-screen="7" onclick="navTo(7)">
+      <span class="nav-icon">🏦</span><span class="nav-label">投融资申请</span>
+    </button>
+    <button class="nav-item reviewer-only" data-screen="9" onclick="navTo(9)" style="display:none">
+      <span class="nav-icon">✅</span><span class="nav-label">审核中心</span>
+      <span class="pending-count" id="pendingBadge" style="display:none;margin-left:auto;background:#DC2626;color:#FFF;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700">0</span>
+    </button>
+    <div class="nav-section">其他</div>
+    <button class="nav-item" data-screen="8" onclick="navTo(8)">
+      <span class="nav-icon">ℹ️</span><span class="nav-label">系统说明</span>
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar" id="userAvatar">农</div>
+      <div>
+        <div class="user-name" id="userName">未登录</div>
+        <div class="user-role" id="userRole">—</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+
+<!-- ========== SCREEN 0: 平台主仪表盘 ========== -->
+<section class="screen active" id="screen-0">
+  <div class="page-header">
+    <div>
+      <div class="page-breadcrumb"><span onclick="navTo(0)">首页</span> / 平台主仪表盘</div>
+      <div class="page-title">平台主仪表盘</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="badge badge-green">系统运行中</span>
+      <span style="font-size:12px;color:var(--text-light)" id="dataUpdateTime">数据加载中...</span>
+    </div>
+  </div>
+  <div class="dashboard-grid" id="homeKpiGrid">
+    <div class="kpi-card"><div class="kpi-label">挂牌组织总数</div><div class="kpi-value" id="kpiOrgCount">-<span class="kpi-unit">家</span></div><div class="kpi-sub" id="kpiOrgSub">从云端加载</div></div>
+    <div class="kpi-card gold"><div class="kpi-label">挂牌总资产规模</div><div class="kpi-value" id="kpiAssetScale">-<span class="kpi-unit">万元</span></div><div class="kpi-sub" id="kpiAssetSub">从云端加载</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">投融资申请笔数</div><div class="kpi-value" id="kpiFinanceCount">-<span class="kpi-unit">笔</span></div><div class="kpi-sub" id="kpiFinanceSub">从云端加载</div></div>
+    <div class="kpi-card purple"><div class="kpi-label">城乡要素对接项目</div><div class="kpi-value" id="kpiFactorCount">-<span class="kpi-unit">项</span></div><div class="kpi-sub" id="kpiFactorSub">从云端加载</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">挂牌组织区县分布</span><span class="badge badge-green" id="districtCountBadge">- 个区县</span></div>
+      <div id="districtChart" style="display:flex;align-items:flex-end;gap:24px;height:180px;padding:10px 0"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">最新动态</span></div>
+      <div id="newsFeed" style="display:flex;flex-direction:column;gap:10px;max-height:300px;overflow-y:auto">
+        <div style="text-align:center;padding:20px;color:var(--text-light)">加载中...</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN 1: 挂牌大厅 ========== -->
+<section class="screen" id="screen-1">
+  <div class="page-header">
+    <div>
+      <div class="page-breadcrumb"><span onclick="navTo(0)">首页</span> / 挂牌大厅</div>
+      <div class="page-title">挂牌大厅</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="badge badge-green" id="listingOrgBadge">- 家挂牌组织</span>
+      <button class="btn btn-primary btn-sm" onclick="navTo(6)">+ 申请挂牌</button>
+    </div>
+  </div>
+  <div class="listing-toolbar">
+    <div class="filter-group">
+      <select class="filter-select" id="filterDistrict" onchange="filterListing()">
+        <option value="">全部区县</option>
+        <option>龙泉驿区</option><option>新津区</option><option>名山区</option>
+        <option>丹棱县</option><option>温江区</option><option>翠屏区</option>
+      </select>
+      <select class="filter-select" id="filterStatus" onchange="filterListing()">
+        <option value="">全部状态</option>
+        <option>正常挂牌</option><option>待审核</option><option>融资中</option>
+      </select>
+      <input class="search-input" placeholder="搜索组织名称或代码..." id="filterSearch" oninput="filterListing()">
+    </div>
+    <div class="listing-stats" id="listingStats">共 <strong id="listingOrgCount">-</strong> 家挂牌组织</div>
+  </div>
+  <div class="listing-grid" id="listingGrid">
+    <div style="text-align:center;padding:40px;color:#999;grid-column:1/-1">加载中...</div>
+  </div>
+</section>
+
+<!-- ========== SCREEN 2: 组织详情 ========== -->
+<section class="screen" id="screen-2">
+  <div class="page-header">
+    <div>
+      <div class="page-breadcrumb"><span onclick="navTo(0)">首页</span> / <span onclick="navTo(1)">挂牌大厅</span> / 组织详情</div>
+      <div class="page-title">组织详情</div>
+    </div>
+    <div class="code-badge" id="detailCode"><span class="njc-tag">NJC</span>510182·001</div>
+  </div>
+  <div class="org-detail-header">
+    <div class="org-top">
+      <div class="org-name-block">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <h3 id="detailOrgName">组织名称</h3>
+          <span class="badge badge-green" id="detailStatus">正常挂牌</span>
+        </div>
+        <div class="code-line">
+          <div class="code-badge code-badge-sm" id="detailCodeSm"><span class="njc-tag">NJC</span>510182·001</div>
+          <span style="font-size:12px;color:var(--text-light)" id="detailDate">挂牌日期: 2026-03-15</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="editOrgDetail()">编辑信息</button>
+        <button class="btn btn-gold btn-sm" onclick="applyFinanceForOrg()">申请投融资</button>
+      </div>
+    </div>
+  </div>
+  <div class="tabs" style="margin-bottom:20px">
+    <button class="tab-btn active" onclick="switchDetailTab(this,'basic')">基本信息</button>
+    <button class="tab-btn" onclick="switchDetailTab(this,'assets')">资产权益</button>
+    <button class="tab-btn" onclick="switchDetailTab(this,'resources')">资源权益</button>
+    <button class="tab-btn" onclick="switchDetailTab(this,'finance')">投融资</button>
+    <button class="tab-btn" onclick="switchDetailTab(this,'factor')">要素对接</button>
+  </div>
+  <div id="detailTabBasic">
+    <div class="detail-grid" id="detailBasicGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px"></div>
+  </div>
+  <div id="detailTabAssets" style="display:none">
+    <div class="card"><div class="card-header"><span class="card-title">资产明细</span></div>
+      <table class="data-table" id="detailAssetTable"><thead><tr><th>资产名称</th><th>类型</th><th>面积/数量</th><th>评估价值</th><th>状态</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+  <div id="detailTabResources" style="display:none">
+    <div class="card"><div class="card-header"><span class="card-title">资源权益</span></div>
+      <table class="data-table" id="detailResourceTable"><thead><tr><th>资源名称</th><th>类型</th><th>面积/数量</th><th>评估价值</th><th>状态</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+  <div id="detailTabFinance" style="display:none">
+    <div class="card"><div class="card-header"><span class="card-title">投融资记录</span></div>
+      <table class="data-table" id="detailFinanceTable"><thead><tr><th>申请编号</th><th>金额</th><th>期限</th><th>用途</th><th>状态</th><th>日期</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+  <div id="detailTabFactor" style="display:none">
+    <div class="card"><div class="card-header"><span class="card-title">要素对接记录</span></div>
+      <table class="data-table" id="detailFactorTable"><thead><tr><th>项目名称</th><th>类型</th><th>对接方</th><th>状态</th><th>日期</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN 3: 投融资服务 ========== -->
+<section class="screen" id="screen-3">
+  <div class="page-header">
+    <div>
+      <div class="page-breadcrumb"><span onclick="navTo(0)">首页</span> / 投融资服务</div>
+      <div class="page-title">投融资服务</div>
+    </div>
+    <button class="btn btn-gold" onclick="selectedFinanceProduct=null;navTo(7)">+ 提交投融资申请</button>
+  </div>
+  <div class="finance-grid" id="financeProductGrid">
+    <div class="finance-product" onclick="selectFinanceProduct(0)">
+      <div class="fp-header"><div class="fp-icon" style="background:#DCFCE7">🏦</div><span class="fp-name">普惠涉农贷</span></div>
+      <div class="fp-desc">面向农村集体经济组织的专项贷款产品，用于农业生产、基础设施建设等</div>
+      <div class="fp-meta"><span>💰 最高 1000万元</span><span>📅 最长 5年</span></div>
+    </div>
+    <div class="finance-product" onclick="selectFinanceProduct(1)">
+      <div class="fp-header"><div class="fp-icon" style="background:#DBEAFE">🌾</div><span class="fp-name">农业供应链金融</span></div>
+      <div class="fp-desc">基于农产品供应链的应收账款融资、订单融资等灵活金融产品</div>
+      <div class="fp-meta"><span>💰 按订单额度核定</span><span>📅 6个月-2年</span></div>
+    </div>
+    <div class="finance-product" onclick="selectFinanceProduct(2)">
+      <div class="fp-header"><div class="fp-icon" style="background:#FEF3C7">🏗</div><span class="fp-name">集体资产抵押贷</span></div>
+      <div class="fp-desc">以集体所有的土地经营权、建筑物等资产作为抵押物的融资产品</div>
+      <div class="fp-meta"><span>💰 最高评估值70%</span><span>📅 最长 10年</span></div>
+    </div>
+    <div class="finance-product" onclick="selectFinanceProduct(3)">
+      <div class="fp-header"><div class="fp-icon" style="background:#F3E8FF">💡</div><span class="fp-name">乡村振兴专项贷</span></div>
+      <div class="fp-desc">响应国家乡村振兴战略的专项贷款，享受财政贴息政策</div>
+      <div class="fp-meta"><span>💰 最高 500万元</span><span>📅 最长 3年</span></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:20px">
+    <div class="card-header"><span class="card-title">投融资动态</span></div>
+    <table class="data-table" id="financeDynamicTable">
+      <thead><tr><th>组织名称</th><th>挂牌代码</th><th>金额</th><th>产品类型</th><th>状态</th><th>申请日期</th></tr></thead>
+      <tbody><tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:40px">暂无投融资记录</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========== SCREEN 4: 城乡要素市场 ========== -->
+<section class="screen" id="screen-4">
+  <div id="factorMain">
+    <div class="page-header">
+      <div>
+        <div class="page-breadcrumb"><span onclick="navTo(0)">首页</span> / 城乡要素市场</div>
+        <div class="page-title">城乡要素市场</div>
+        <div style="font-size:12px;color:var(--text-gray);margin-top:4px">促进城市与农村集体经济组织间要素自由流动与高效配置</div>
+      </div>
+      <span class="badge badge-green">要素资源对接中</span>
+    </div>
+    <div style="background:var(--bg-card);border-radius:var(--radius-md);box-shadow:var(--shadow-card);padding:24px;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap">
+        <div style="flex:1;min-width:260px;text-align:center;padding:20px;background:linear-gradient(135deg,#DBEAFE,#BFDBFE);border-radius:var(--radius-lg);border:2px solid #93C5FD">
+          <div style="font-size:28px;margin-bottom:8px">🏙️</div>
+          <div style="font-size:15px;font-weight:700;color:#1E40AF;margin-bottom:4px">城市供给侧</div>
+          <div style="font-size:11px;color:#3B82F6;line-height:1.6">技术成果 · 专家智库<br>数据服务 · 产业资本</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 16px;min-width:120px">
+          <div style="font-size:20px;color:var(--green-primary)">→ 技术下沉 / 资本注入 →</div>
+          <div style="font-size:20px;color:var(--gold-primary)">← 土地资源 / 生态产品 ←</div>
+        </div>
+        <div style="flex:1;min-width:260px;text-align:center;padding:20px;background:linear-gradient(135deg,#DCFCE7,#D1FAE5);border-radius:var(--radius-lg);border:2px solid #6EE7B7">
+          <div style="font-size:28px;margin-bottom:8px">🌾</div>
+          <div style="font-size:15px;font-weight:700;color:#166534;margin-bottom:4px">农村需求侧</div>
+          <div style="font-size:11px;color:var(--green-primary);line-height:1.6" id="factorStats">挂牌集体经济组织<br>覆盖各区县</div>
+        </div>
+      </div>
+    </div>
+    <div class="factor-grid" id="factorGrid">
+      <div class="factor-card" onclick="showFactorSub('tech')">
+        <div class="fc-icon">🔬</div><div class="fc-name">技术要素</div><div class="fc-count" id="factorTechCount">-</div>
+        <div class="fc-desc">城市技术成果向农村转移转化</div>
+        <div class="fc-arrow">点击查看 →</div>
+      </div>
+      <div class="factor-card" onclick="showFactorSub('talent')">
+        <div class="fc-icon">👥</div><div class="fc-name">人才要素</div><div class="fc-count" id="factorTalentCount">-</div>
+        <div class="fc-desc">城市专业人才下沉服务农村</div>
+        <div class="fc-arrow">点击查看 →</div>
+      </div>
+      <div class="factor-card" onclick="showFactorSub('data')">
+        <div class="fc-icon">📊</div><div class="fc-name">数据要素</div><div class="fc-count" id="factorDataCount">-</div>
+        <div class="fc-desc">城市数据资源赋能农村数字化</div>
+        <div class="fc-arrow">点击查看 →</div>
+      </div>
+      <div class="factor-card" onclick="showFactorSub('capital')">
+        <div class="fc-icon">💰</div><div class="fc-name">资本要素</div><div class="fc-count" id="factorCapitalCount">-</div>
+        <div class="fc-desc">城市产业资本向农村注入</div>
+        <div class="fc-arrow">点击查看 →</div>
+      </div>
+    </div>
+  </div>
+  <!-- 技术要素子页 -->
+  <div class="factor-subpage" id="factor-tech" style="display:none">
+    <div style="margin-bottom:16px"><a onclick="showFactorMain()" style="cursor:pointer;color:var(--green-primary)">← 返回城乡要素市场</a></div>
+    <div class="page-header"><div><div class="page-title">🔬 技术要素</div><div style="font-size:12px;color:var(--text-gray);margin-top:4px">推动城市科技创新资源向农村集体经济组织流动</div></div></div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">技术要素资源列表</span><button class="btn btn-primary btn-sm reviewer-ctrl" onclick="addFactorItem('tech')">+ 添加</button></div>
+      <table class="data-table" id="factorTechTable"><thead><tr><th>技术名称</th><th>所属领域</th><th>城市供给方</th><th>农村需求方</th><th>状态</th><th>对接日期</th><th>操作</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <!-- 人才要素子页 -->
+  <div class="factor-subpage" id="factor-talent" style="display:none">
+    <div style="margin-bottom:16px"><a onclick="showFactorMain()" style="cursor:pointer;color:var(--green-primary)">← 返回城乡要素市场</a></div>
+    <div class="page-header"><div><div class="page-title">👥 人才要素</div><div style="font-size:12px;color:var(--text-gray);margin-top:4px">促进城乡人才双向流动，提升农村集体经济组织经营管理能力</div></div></div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">人才要素资源列表</span><button class="btn btn-primary btn-sm reviewer-ctrl" onclick="addFactorItem('talent')">+ 添加</button></div>
+      <table class="data-table" id="factorTalentTable"><thead><tr><th>人才类型</th><th>专业领域</th><th>供给方（城市）</th><th>需求方（农村）</th><th>状态</th><th>对接日期</th><th>操作</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <!-- 数据要素子页 -->
+  <div class="factor-subpage" id="factor-data" style="display:none">
+    <div style="margin-bottom:16px"><a onclick="showFactorMain()" style="cursor:pointer;color:var(--green-primary)">← 返回城乡要素市场</a></div>
+    <div class="page-header"><div><div class="page-title">📊 数据要素</div><div style="font-size:12px;color:var(--text-gray);margin-top:4px">数据资源赋能农村集体经济，驱动数字化治理与精准决策</div></div></div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">数据要素资源列表</span><button class="btn btn-primary btn-sm reviewer-ctrl" onclick="addFactorItem('data')">+ 添加</button></div>
+      <table class="data-table" id="factorDataTable"><thead><tr><th>数据资源名称</th><th>数据类型</th><th>供给方（城市）</th><th>需求方（农村）</th><th>状态</th><th>对接日期</th><th>操作</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <!-- 资本要素子页 -->
+  <div class="factor-subpage" id="factor-capital" style="display:none">
+    <div style="margin-bottom:16px"><a onclick="showFactorMain()" style="cursor:pointer;color:var(--green-primary)">← 返回城乡要素市场</a></div>
+    <div class="page-header"><div><div class="page-title">💰 资本要素</div><div style="font-size:12px;color:var(--text-gray);margin-top:4px">引导城市资本下乡，支持农村集体经济发展与产业升级</div></div></div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">资本要素资源列表</span><button class="btn btn-primary btn-sm reviewer-ctrl" onclick="addFactorItem('capital')">+ 添加</button></div>
+      <table class="data-table" id="factorCapitalTable"><thead><tr><th>资本项目名称</th><th>资本类型</th><th>供给方（城市）</th><th>需求方（农村）</th><th>状态</th><th>对接日期</th><th>操作</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</section>
+
+
+<!-- ========== SCREEN 5: 资产权益详情 ========== -->
+<section class="screen" id="screen-5">
+  <div class="page-header">
+    <div>
+      <div class="page-breadcrumb"><span onclick="navTo(0)">首页</span> / <span onclick="navTo(1)">挂牌大厅</span> / <span onclick="navToOrgDetail(lastViewedOrg)">组织详情</span> / 资产权益</div>
+      <div class="page-title">资产权益详情</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="code-badge" id="assetCode"><span class="njc-tag">NJC</span>510182·001</div>
+      <span class="badge badge-green" id="assetStatus">正常挂牌</span>
+    </div>
+  </div>
+
+  <div class="asset-kpis" id="assetKpiArea"></div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">资产明细清单</span><button class="btn btn-gold btn-sm reviewer-ctrl" onclick="openAssetEditModal('asset',-1)">+ 新增资产</button></div>
+    <div class="readonly-notice" id="screen5ReadonlyNotice"><span class="rn-icon">🔒</span><span>资产权益数据由<strong>平台管理员</strong>核查录入，如需变更请联系成都农交所运营中心</span></div>
+    <table class="data-table" id="assetDetailTable">
+      <thead><tr><th>资产名称</th><th>资产类型</th><th>面积/数量</th><th>评估价值</th><th>权益状态</th><th class="reviewer-ctrl" id="s5AssetOpCol">操作</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========== SCREEN 6: 申请挂牌 ========== -->
+<section class="screen" id="screen-6">
+  <div class="page-header">
+    <div>
+      <div class="page-breadcrumb"><span onclick="navTo(0)">首页</span> / <span onclick="navTo(1)">挂牌大厅</span> / 申请挂牌</div>
+      <div class="page-title">申请挂牌</div>
+    </div>
+    <span class="badge badge-orange" id="listingStatus">待提交</span>
+  </div>
+  <div class="progress-steps" id="listingSteps">
+    <div class="progress-step active" id="step1"><div class="step-num">1</div><span class="step-label">组织基本信息</span><div class="step-line"></div></div>
+    <div class="progress-step" id="step2"><div class="step-num">2</div><span class="step-label">上传证明材料</span><div class="step-line"></div></div>
+    <div class="progress-step" id="step3"><div class="step-num">3</div><span class="step-label">提交审核</span></div>
+  </div>
+  <div class="step-panel active" id="stepPanel1">
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:20px">
+      <div class="card">
+        <div class="card-header"><span class="card-title">组织基本信息</span></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">组织名称 <span class="required">*</span></label><input class="form-input" id="orgName" placeholder="请输入集体经济组织全称"></div>
+          <div class="form-group"><label class="form-label">法定代表人 <span class="required">*</span></label><input class="form-input" id="legalRep" placeholder="请输入法定代表人姓名"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">所属区县 <span class="required">*</span></label>
+            <select class="form-select" id="regDistrict">
+              <option value="">请选择区县</option>
+              <option>龙泉驿区</option><option>新津区</option><option>温江区</option>
+              <option>名山区</option><option>丹棱县</option><option>翠屏区</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">联系电话</label><input class="form-input" id="contactPhone" placeholder="联系电话"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">注册地址</label><input class="form-input" id="orgAddress" placeholder="注册地址"></div>
+          <div class="form-group"><label class="form-label">成员总数</label><input class="form-input" id="memberCount" type="number" placeholder="成员数量"></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+          <button class="btn btn-outline">保存草稿</button>
+          <button class="btn btn-primary" onclick="listingStep(2)">下一步 →</button>
+        </div>
+      </div>
+      <div>
+        <div style="background:linear-gradient(135deg,#0A2E0A,#0D3B0D);color:#FFF;border-radius:var(--radius-md);padding:20px">
+          <h4 style="color:var(--gold-light);margin-bottom:12px">📋 挂牌代码说明</h4>
+          <div style="font-size:28px;font-weight:800;letter-spacing:2px;color:var(--gold-light);text-align:center;margin-bottom:12px">NJC510182·001</div>
+          <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,0.75)">
+            <div>编码规则：</div>
+            <div>• <strong>NJC</strong> — 成都农交所标识</div>
+            <div>• <strong>6位数字</strong> — 行政区划代码</div>
+            <div>• <strong>3位数字</strong> — 区县挂牌序号</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="step-panel" id="stepPanel2" style="display:none">
+    <div class="card">
+      <div class="card-header"><span class="card-title">上传证明材料</span></div>
+      <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:var(--radius-md);padding:16px;margin-bottom:20px">
+        <div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:8px">📋 资产权益由管理员核查录入</div>
+        <div style="font-size:12px;color:#666;line-height:1.6">资产明细等核心数据将由管理员在审核通过后依据凭证进行专业录入。本步骤仅需上传相关证明文件。</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div class="upload-zone" onclick="simulateUpload('cert')" style="border:2px dashed var(--border-light);border-radius:var(--radius-md);padding:30px;text-align:center;cursor:pointer">
+          <div style="font-size:36px;margin-bottom:8px">📜</div><div>农村集体经济组织登记证书</div><div style="font-size:11px;color:#999">PDF/JPG ≤10MB</div>
+        </div>
+        <div class="upload-zone" onclick="simulateUpload('members')" style="border:2px dashed var(--border-light);border-radius:var(--radius-md);padding:30px;text-align:center;cursor:pointer">
+          <div style="font-size:36px;margin-bottom:8px">👥</div><div>成员名册</div><div style="font-size:11px;color:#999">PDF/Excel ≤10MB</div>
+        </div>
+      </div>
+      <div id="uploadedFiles" style="margin-bottom:16px"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-outline" onclick="listingStep(1)">← 上一步</button>
+        <button class="btn btn-primary" onclick="listingStep(3)">下一步 →</button>
+      </div>
+    </div>
+  </div>
+  <div class="step-panel" id="stepPanel3" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:20px">
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><span class="card-title">📋 基本信息确认</span></div>
+          <div id="listingSummary" style="padding:16px;background:var(--bg-light);border-radius:var(--radius-md)"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📎 提交声明</span></div>
+          <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:13px;color:var(--text-gray)">
+            <input type="checkbox" id="declaration" style="margin-top:3px">
+            本人代表申请组织郑重声明：以上所填信息及上传文件均真实、准确、完整。
+          </label>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+            <button class="btn btn-outline" onclick="listingStep(2)">← 上一步</button>
+            <button class="btn btn-gold btn-lg" onclick="submitListing()">✅ 确认提交审核</button>
+          </div>
+        </div>
+      </div>
+      <div style="background:linear-gradient(135deg,#0A2E0A,#0D3B0D);color:#FFF;border-radius:var(--radius-md);padding:20px">
+        <h4 style="color:var(--gold-light);margin-bottom:12px">⏱ 审核流程预估</h4>
+        <div style="font-size:13px;line-height:2;color:rgba(255,255,255,0.8)">
+          <div>初审（形式审查）：1-2个工作日</div>
+          <div>复审（实质审查）：3-5个工作日</div>
+          <div>代码分配：1个工作日</div>
+          <div>挂牌公告：即时生效</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ========== SCREEN 7: 投融资申请 ========== -->
+<section class="screen" id="screen-7">
+  <div class="page-header">
+    <div>
+      <div class="page-breadcrumb"><span onclick="navTo(0)">首页</span> / <span onclick="navTo(3)">投融资服务</span> / 投融资申请</div>
+      <div class="page-title">投融资申请</div>
+    </div>
+    <span class="badge badge-blue">待提交</span>
+  </div>
+
+  <div class="invest-tabs">
+    <button class="invest-tab active" onclick="switchInvestTab('indirect')">🏦 间接融资（银行信贷）</button>
+    <button class="invest-tab" onclick="switchInvestTab('direct')">📈 直接融资（股权/债券）</button>
+  </div>
+
+  <div class="invest-panel active" id="invest-indirect">
+  <div id="productContextBar" class="product-context-bar" style="display:none"></div>
+  <div class="form-layout">
+    <div class="card">
+      <div class="card-header"><span class="card-title">信贷融资申请信息</span></div>
+      <div class="form-group">
+        <label class="form-label">关联挂牌组织</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="code-badge code-badge-sm" id="loanCodeBadge"><span class="njc-tag">NJC</span>510182·001</div>
+          <span style="font-size:13px;color:var(--text-dark)" id="loanOrgName">龙泉驿区龙泉街道农村集体经济组织</span>
+          <button class="btn btn-outline btn-sm" onclick="navTo(1)">更换</button>
+        </div>
+        <div class="form-hint">挂牌代码自动关联，不可手动修改</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">申请融资金额（万元）<span class="required">*</span></label><input class="form-input" placeholder="请输入金额" type="number" id="loanAmount"></div>
+        <div class="form-group"><label class="form-label">贷款期限<span class="required">*</span></label><select class="form-select" id="loanTerm"><option value="">请选择期限</option><option>6个月</option><option>1年</option><option>2年</option><option>3年</option><option>5年</option><option>10年</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">融资产品类型<span class="required">*</span></label><select class="form-select" id="loanProduct" onchange="onProductSelect(this.value)"><option value="">请选择产品</option><option>普惠涉农贷</option><option>农业供应链金融</option><option>集体资产抵押贷</option><option>乡村振兴专项贷</option></select></div>
+      <div class="form-group"><label class="form-label">资金用途说明<span class="required">*</span></label><textarea class="form-textarea" placeholder="请详细说明融资资金的具体用途..." id="loanPurpose"></textarea></div>
+      <div class="form-group"><label class="form-label">担保方式</label>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox"> 信用担保</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox"> 资产抵押</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox"> 第三方保证</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox"> 应收账款质押</label>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px"><button class="btn btn-outline">保存草稿</button><button class="btn btn-gold btn-lg" onclick="submitLoan()">提交信贷申请</button></div>
+    </div>
+    <div>
+      <div class="estimate-card">
+        <h4>📊 快速预估</h4>
+        <div class="estimate-item"><span>基准利率</span><span class="ei-val">3.45%</span></div>
+        <div class="estimate-item"><span>月均还款预估</span><span class="ei-val">—</span></div>
+        <div class="estimate-item"><span>审批预期时间</span><span class="ei-val">3-5个工作日</span></div>
+        <div class="estimate-item"><span>放款周期</span><span class="ei-val">T+2到账</span></div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:12px;line-height:1.5">以上为预估数据，实际以审批结果为准。</div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <div class="invest-panel" id="invest-direct">
+  <div class="form-layout">
+    <div class="card">
+      <div class="card-header"><span class="card-title">直接融资申请信息</span></div>
+      <div class="form-group">
+        <label class="form-label">关联挂牌组织</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="code-badge code-badge-sm"><span class="njc-tag">NJC</span>510182·001</div>
+          <span style="font-size:13px;color:var(--text-dark)" id="directOrgName">龙泉驿区龙泉街道农村集体经济组织</span>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">融资方式<span class="required">*</span></label>
+        <select class="form-select" id="directType"><option value="">请选择融资方式</option><option>股权融资 — 增资扩股</option><option>股权融资 — 股份转让</option><option>债券发行 — 乡村振兴专项债</option><option>债券发行 — 绿色农业债</option><option>资产证券化 — ABS</option><option>产业基金 — 引入战略投资</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">拟融资金额（万元）<span class="required">*</span></label><input class="form-input" placeholder="请输入金额" type="number" id="directAmount"></div>
+        <div class="form-group"><label class="form-label">拟出让股权/发行期限</label><input class="form-input" placeholder="如：15%股权 / 5年期" id="directTerm"></div>
+      </div>
+      <div class="form-group"><label class="form-label">资金用途说明<span class="required">*</span></label><textarea class="form-textarea" placeholder="请详细说明募集资金的具体投向..." id="directPurpose"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">目标投资方类型</label>
+          <select class="form-select" id="directInvestor"><option value="">不限</option><option>产业资本</option><option>战略投资者</option><option>财务投资者</option><option>政府引导基金</option><option>社会资本</option></select></div>
+        <div class="form-group"><label class="form-label">预期完成时间</label><input class="form-input" type="date" id="directTimeline"></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px"><button class="btn btn-outline">保存草稿</button><button class="btn btn-gold btn-lg" onclick="submitDirect()">提交直接融资申请</button></div>
+    </div>
+    <div>
+      <div class="estimate-card">
+        <h4>📈 直接融资优势</h4>
+        <div class="estimate-item"><span>不增加负债率</span><span class="ei-val">✓</span></div>
+        <div class="estimate-item"><span>引入战略资源</span><span class="ei-val">✓</span></div>
+        <div class="estimate-item"><span>提升治理水平</span><span class="ei-val">✓</span></div>
+        <div class="estimate-item"><span>审批周期预估</span><span class="ei-val">15-30工作日</span></div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:12px;line-height:1.5">适用于资产规模较大、有明确发展规划的集体经济组织。</div>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN 8: 系统说明 ========== -->
+<section class="screen" id="screen-8">
+  <div class="page-header">
+    <div>
+      <div class="page-breadcrumb"><span onclick="navTo(0)">首页</span> / 系统说明</div>
+      <div class="page-title">系统说明</div>
+    </div>
+    <span class="badge badge-green">v1.0</span>
+  </div>
+
+  <div class="system-overview">
+    <div class="sys-card"><div class="sys-icon">🏛</div><h4>挂牌大厅</h4><p>展示所有已挂牌农村集体经济组织，支持按区县、状态筛选，点击卡片查看详情</p></div>
+    <div class="sys-card"><div class="sys-icon">📋</div><h4>组织详情</h4><p>查看组织基本信息、资产权益、投融资记录、要素对接及交易记录</p></div>
+    <div class="sys-card"><div class="sys-icon">💰</div><h4>投融资服务</h4><p>提供间接融资和直接融资两大类产品，满足多元化投融资需求</p></div>
+    <div class="sys-card"><div class="sys-icon">📈</div><h4>城乡要素市场</h4><p>汇聚技术、人才、数据、资本四大要素资源</p></div>
+    <div class="sys-card"><div class="sys-icon">📝</div><h4>申请挂牌</h4><p>三步完成挂牌申请，系统自动分配挂牌代码</p></div>
+    <div class="sys-card"><div class="sys-icon">🏦</div><h4>投融资申请</h4><p>支持间接融资与直接融资，全方位投融资服务</p></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">挂牌代码体系</span></div>
+    <table class="data-table">
+      <thead><tr><th>挂牌代码</th><th>组织名称</th><th>区县</th><th>行政区划代码</th><th>序号</th><th>状态</th></tr></thead>
+      <tbody id="codeSystemTableBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========== SCREEN 9: 审核中心 ========== -->
+<section class="screen" id="screen-9">
+  <div class="page-header">
+    <div>
+      <div class="page-breadcrumb"><span onclick="navTo(0)">首页</span> / 审核中心</div>
+      <div class="page-title">审核中心</div>
+    </div>
+    <span class="badge badge-blue">审核员模式</span>
+  </div>
+  <div class="review-tabs" style="display:flex;gap:0;border-bottom:2px solid var(--border-light);margin-bottom:20px">
+    <button class="review-tab active" onclick="switchReviewTab('listing',this)">📝 挂牌申请 <span class="tab-badge" id="listingPendingCount">0</span></button>
+    <button class="review-tab" onclick="switchReviewTab('finance',this)">🏦 投融资申请 <span class="tab-badge" id="financePendingCount">0</span></button>
+  </div>
+  <div id="reviewListingPanel">
+    <div class="empty-state" id="listingReviewEmpty" style="text-align:center;padding:60px 20px;color:var(--text-light)">暂无待审核的挂牌申请</div>
+    <div id="listingReviewList"></div>
+  </div>
+  <div id="reviewFinancePanel" style="display:none">
+    <div class="empty-state" id="financeReviewEmpty" style="text-align:center;padding:60px 20px;color:var(--text-light)">暂无待审核的投融资申请</div>
+    <div id="financeReviewList"></div>
+  </div>
+</section>
+
+</main>
+
+
+<!-- ===== 资产/资源权益编辑模态框 ===== -->
+<div class="modal-overlay" id="editAssetResourceModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="editAssetResourceTitle">📝 编辑权益信息</h3>
+      <button class="modal-close" onclick="closeAssetEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editAssetResourceType">
+      <input type="hidden" id="editAssetResourceIndex">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">名称<span class="required">*</span></label><input class="form-input" id="editARName" placeholder="权益名称"></div>
+        <div class="form-group"><label class="form-label">类型</label><select class="form-select" id="editARType"><option>土地</option><option>建筑</option><option>水面</option><option>水资源</option><option>林地</option><option>水域</option><option>文旅资源</option><option>生态资源</option><option>种质资源</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">面积/数量</label><input class="form-input" id="editARSize" placeholder="如：860亩"></div>
+        <div class="form-group"><label class="form-label">评估价值</label><input class="form-input" id="editARValue" placeholder="如：2,580万元"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">权益状态</label><select class="form-select" id="editARStatus"><option>已确权</option><option>评估中</option><option>待确权</option><option>争议中</option></select></div>
+        <div class="form-group"><label class="form-label">标签样式</label><select class="form-select" id="editARTagClass"><option>tag-green(绿色)</option><option>tag-blue(蓝色)</option><option>tag-yellow(黄色)</option><option>tag-purple(紫色)</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAssetEditModal()">取消</button>
+      <button class="btn btn-primary btn-lg" onclick="saveAssetEdit()">保存修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ========================================
+// 成都农交所 · 生产系统核心逻辑
+// 版本：2.1.0 Production（内置数据兜底模式）
+// 后端：CloudBase (lizhang-cheshi-d3g6chb4t25222375) + 本地离线数据
+// ========================================
+
+const ENV_ID = 'lizhang-cheshi-d3g6chb4t25222375';
+
+// ===== 全局状态 =====
+let cloudbaseApp = null;   // CloudBase SDK app instance
+let authInstance = null;    // CloudBase auth instance
+let currentUser = null;
+let orgData = [];
+let applications = [];
+let newsFeed = [];
+let db = null;
+let currentOrgIdx = -1;
+let uploadedFiles = [];
+let selectedFinanceProduct = null;
+let currentListingStep = 1;
+let dbMode = 'unknown'; // 'remote' | 'local' — 初始化后确定
+
+// 金融产品定义
+const FINANCE_PRODUCTS = [
+  { name:'普惠涉农贷', icon:'🏦', desc:'面向农村集体经济组织的专项贷款产品，用于农业生产、基础设施建设等', max:'最高 1000万元', term:'最长 5年' },
+  { name:'农业供应链金融', icon:'🌾', desc:'基于农产品供应链的应收账款融资、订单融资等灵活金融产品', max:'按订单额度核定', term:'6个月-2年' },
+  { name:'集体资产抵押贷', icon:'🏗', desc:'以集体所有的土地经营权、建筑物等资产作为抵押物的融资产品', max:'最高评估值70%', term:'最长 10年' },
+  { name:'乡村振兴专项贷', icon:'⚡', desc:'响应国家乡村振兴战略的专项贷款，享受财政贴息政策', max:'最高 500万元', term:'最长 3年' },
+];
+
+const FACTOR_TYPES = ['tech','talent','data','capital'];
+
+// ===== 中文翻译映射表 =====
+const STATUS_MAP = {
+  'listed': '正常挂牌', 'active': '正常挂牌', 'approved': '已批准',
+  'pending': '待审核', 'draft': '草稿', 'rejected': '已拒绝',
+  '正常挂牌': '正常挂牌', '融资中': '融资中', '要素对接': '要素对接',
+  '已确权': '已确权', '评估中': '评估中', '待确权': '待确权',
+  '争议中': '争议中'
+};
+const STATUS_CLASS_MAP = {
+  'listed': 'badge-green', 'active': 'badge-green', 'approved': 'badge-green',
+  '正常挂牌': 'badge-green', '已确权': 'badge-green', '已完成': 'badge-green',
+  'pending': 'badge-orange', 'draft': 'badge-orange', '待审核': 'badge-orange',
+  '融资中': 'badge-blue', '要素对接': 'badge-purple', '评估中': 'badge-yellow',
+  'rejected': 'badge-red', '已拒绝': 'badge-red', '争议中': 'badge-red'
+};
+const ASSET_TYPE_MAP = {
+  'building': '建筑', 'commercial': '商业', 'market': '农贸市场',
+  'warehouse': '仓储', 'industrial': '产业园区', 'parking': '停车场',
+  'agricultural': '农业', 'service': '服务业', 'logistics': '物流',
+  '土地': '土地', '水面': '水面', '林地': '林地', '文旅资源': '文旅资源'
+};
+const FACTOR_TYPE_MAP = {
+  'tech': '技术要素', 'talent': '人才要素', 'data': '数据要素', 'capital': '资本要素'
+};
+const FACTOR_ICON_MAP = {
+  'tech': '🔬', 'talent': '👥', 'data': '📊', 'capital': '💰'
+};
+
+// 状态翻译函数
+function transStatus(s) { return STATUS_MAP[s] || s || '—'; }
+function transStatusClass(s) { return STATUS_CLASS_MAP[s] || 'badge-orange'; }
+function transAssetType(t) { return ASSET_TYPE_MAP[t] || t || '—'; }
+function transFactorType(t) { return FACTOR_TYPE_MAP[t] || t || '—'; }
+
+// 组织总资产计算（从assets数组求和）
+function calcTotalAssets(org) {
+  var arr = org.assets || [];
+  var total = 0;
+  for (var i = 0; i < arr.length; i++) { total += (arr[i].value || 0); }
+  return total;
+}
+
+// 组织资产列表适配（原始数据 → screen-5格式）
+function adaptAssetsList(org) {
+  var arr = org.assets || [];
+  return arr.map(function(a) {
+    return [a.name || '—', transAssetType(a.type), formatArea(a.area), formatValue(a.value), '已确权', 'badge-green'];
+  });
+}
+
+// 组织资源权益列表（从factors生成）
+function adaptResourceList(org) {
+  var factors = org.factors || {};
+  var result = [];
+  var types = ['tech','talent','data','capital'];
+  for (var i = 0; i < types.length; i++) {
+    var items = factors[types[i]];
+    if (items && items.length) {
+      for (var j = 0; j < items.length; j++) {
+        result.push([items[j], transFactorType(types[i]), '—', '—', '已确权', 'badge-green']);
+      }
+    }
+  }
+  return result;
+}
+
+// 格式化面积
+function formatArea(a) {
+  if (!a) return '—';
+  if (typeof a === 'number') return a + '㎡';
+  return String(a);
+}
+
+// 格式化价值
+function formatValue(v) {
+  if (!v) return '—';
+  if (typeof v === 'number') {
+    if (v >= 10000) return (v / 10000).toFixed(0) + '万元';
+    return v.toLocaleString() + '元';
+  }
+  return String(v);
+}
+
+// ============================================================
+//  内置演示数据（从 CloudBase 数据库导出，与真实数据完全一致）
+//  当远程 API 不可用时自动启用（网络拦截/离线等场景）
+// ============================================================
+const LOCAL_DATA = {
+  users_profile: [
+    { _id:'2069791636592513025', _openid:'2069791636592513025', username:'admin', password:'admin123',
+      role:'reviewer', displayName:'管理员', orgName:'成都农交所管理员', contact:'管理员',
+      phone:'', district:'成都市', uid:'2069791636592513025',
+      createdAt:'2026-06-24T22:32:00+08:00' },
+    { _id:'0f1c50b96a3c70a700231de351a3e086', username:'org001', password:'123456',
+      role:'org', displayName:'龙泉驿区龙泉街道', orgName:'龙泉驿区龙泉街道农村集体经济组织',
+      shortName:'龙泉驿区龙泉街道', contact:'张建国', phone:'028-8485XXXX',
+      district:'龙泉驿区', orgCode:'NJC-510182-001', status:'active',
+      createdAt:'2026-06-25T00:00:00.000Z' },
+    { _id:'0f1c50b96a3c70a700231de433e55615', username:'org002', password:'123456',
+      role:'org', displayName:'龙泉驿区柏合镇', orgName:'龙泉驿区柏合镇农村集体经济组织',
+      shortName:'龙泉驿区柏合镇', contact:'李秀英', phone:'028-8486XXXX',
+      district:'龙泉驿区', orgCode:'NJC-510182-002', status:'active',
+      createdAt:'2026-06-25T00:00:00.000Z' },
+    { _id:'0f1c50b96a3c70a700231de5324ec208', username:'org003', password:'123456',
+      role:'org', displayName:'温江区柳城街道', orgName:'温江区柳城街道农村集体经济组织',
+      shortName:'温江区柳城街道', contact:'王大明', phone:'028-8271XXXX',
+      district:'温江区', orgCode:'NJC-510182-003', status:'active',
+      createdAt:'2026-06-25T00:00:00.000Z' },
+    { _id:'0f1c50b96a3c70a700231de65ca7ce1c', username:'org004', password:'123456',
+      role:'org', displayName:'温江区万春镇', orgName:'温江区万春镇农村集体经济组织',
+      shortName:'温江区万春镇', contact:'赵丽华', phone:'028-8272XXXX',
+      district:'温江区', orgCode:'NJC-510182-004', status:'active',
+      createdAt:'2026-06-25T00:00:00.000Z' },
+    { _id:'0f1c50b96a3c70a700231de7515b56ab', username:'org005', password:'123456',
+      role:'org', displayName:'青白江区大同街道', orgName:'青白江区大同街道农村集体经济组织',
+      shortName:'青白江区大同街道', contact:'刘文强', phone:'028-8365XXXX',
+      district:'青白江区', orgCode:'NJC-510182-005', status:'active',
+      createdAt:'2026-06-25T00:00:00.000Z' },
+    { _id:'0f1c50b96a3c70a700231de8224fc587', username:'org006', password:'123456',
+      role:'org', displayName:'新都区新都街道', orgName:'新都区新都街道农村集体经济组织',
+      shortName:'新都区新都街道', contact:'陈志刚', phone:'028-8397XXXX',
+      district:'新都区', orgCode:'NJC-510182-006', status:'active',
+      createdAt:'2026-06-25T00:00:00.000Z' }
+  ],
+  organizations: [
+    { _id:'org001', code:'NJC-510182-001', name:'龙泉驿区龙泉街道农村集体经济组织', shortName:'龙泉驿区龙泉街道',
+      type:'村集体', district:'龙泉驿区', districtCode:'510112', address:'龙泉驿区长柏路88号',
+      legalPerson:'张建国', phone:'028-8485XXXX', status:'listed', listedAt:'2026-03-15',
+      equityTotal:12500000, shareCount:12500, growthRate:8.5,
+      assets:[{name:'综合服务楼',type:'building',area:2800,value:8500000},{name:'商铺20间',type:'commercial',area:1200,value:4000000}],
+      factors:{tech:['智慧农业管理系统'],talent:['农业技术员2名'],data:['产权数据平台'],capital:['农商银行授信500万']},
+      seq:1, description:'位于成都市龙泉驿区核心地段，拥有综合服务楼和沿街商铺等优质经营性资产。' },
+    { _id:'org002', code:'NJC-510182-002', name:'龙泉驿区柏合镇农村集体经济组织', shortName:'龙泉驿区柏合镇',
+      type:'镇集体', district:'龙泉驿区', districtCode:'510112', address:'龙泉驿区柏合镇东兴街36号',
+      legalPerson:'李秀英', phone:'028-8486XXXX', status:'listed', listedAt:'2026-03-20',
+      equityTotal:9800000, shareCount:9800, growthRate:12.3,
+      assets:[{name:'农贸市场',type:'market',area:3500,value:6000000},{name:'仓储中心',type:'warehouse',area:2000,value:3800000}],
+      factors:{tech:['电商直播基地'],talent:['运营团队5人'],data:['农产品溯源系统'],capital:['供应链金融300万']},
+      seq:2, description:'以农产品交易和仓储物流为核心业务的镇级集体经济组织。' },
+    { _id:'org003', code:'NJC-510182-003', name:'温江区柳城街道农村集体经济组织', shortName:'温江区柳城街道',
+      type:'街道集体', district:'温江区', districtCode:'510115', address:'温江区柳城街道南凤大道168号',
+      legalPerson:'王大明', phone:'028-8271XXXX', status:'listed', listedAt:'2026-04-01',
+      equityTotal:15200000, shareCount:15200, growthRate:6.8,
+      assets:[{name:'文创园区',type:'industrial',area:5000,value:10000000},{name:'停车场',type:'parking',area:3000,value:5200000}],
+      factors:{tech:['文创数字平台'],talent:['设计师3人'],data:['游客数据分析'],capital:'文旅贷800万'},
+      seq:3, description:'依托温江文创产业优势发展的新型农村集体经济组织。' },
+    { _id:'org004', code:'NJC-510182-004', name:'温江区万春镇农村集体经济组织', shortName:'温江区万春镇',
+      type:'镇集体', district:'温江区', districtCode:'510115', address:'温江区万春镇先锋路99号',
+      legalPerson:'赵丽华', phone:'028-8272XXXX', status:'listed', listedAt:'2026-04-10',
+      equityTotal:8800000, shareCount:8800, growthRate:15.2,
+      assets:[{name:'生态渔场',type:'agricultural',area:'180亩',value:5000000},{name:'农家乐集群',type:'service',area:6000,value:3800000}],
+      factors:{tech:['水产智能监控'],talent:['水产专家2名'],data:['水质监测数据'],capital:'特色农业贷400万'},
+      seq:4, description:'以生态渔业和乡村休闲旅游为特色的现代农业集体经济。' },
+    { _id:'org005', code:'NJC-510182-005', name:'青白江区大同街道农村集体经济组织', shortName:'青白江区大同街道',
+      type:'街道集体', district:'青白江区', districtCode:'510113', address:'青白江区大同镇唐巴路266号',
+      legalPerson:'刘文强', phone:'028-8365XXXX', status:'pending', listedAt:'',
+      equityTotal:6500000, shareCount:6500, growthRate:5.5,
+      assets:[{name:'物流园一期',type:'logistics',area:8000,value:4500000},{name:'标准厂房',type:'industrial',area:4000,value:2000000}],
+      factors:{tech:['物流信息系统'],talent:['物流管理团队'],data:['货运数据平台'],capital:'物流金融600万'},
+      seq:5, description:'依托成都国际铁路港物流优势发展的服务型集体经济组织。' },
+    { _id:'org006', code:'NJC-510182-006', name:'新都区新都街道农村集体经济组织', shortName:'新都区新都街道',
+      type:'街道集体', district:'新都区', districtCode:'510114', address:'新都区新都街道蓉都大道188号',
+      legalPerson:'陈志刚', phone:'028-8397XXXX', status:'draft', listedAt:'',
+      equityTotal:5500000, shareCount:5500, growthRate:0,
+      assets:[{name:'商业综合体',type:'commercial',area:10000,value:5500000}],
+      factors:{tech:'',talent:'',data:'', capital:''},
+      seq:6, description:'正在筹备中的城市近郊商业开发型集体经济组织。' }
+  ],
+  applications: [
+    { _id:'app001', orgId:'org001', orgName:'龙泉驿区龙泉街道农村集体经济组织', type:'挂牌申请',
+      status:'approved', submitTime:'2026-04-01 10:30', reviewTime:'2026-04-02 14:20',
+      reviewer:'管理员', comment:'材料齐全，符合挂牌条件，予以批准。',
+      data:{assets:[{name:'综合服务楼',area:'2800㎡',value:'850万元'},{name:'商铺20间',area:'1200㎡',value:'400万元'}],
+            financeProduct:'普惠涉农贷', amount:'1000万', purpose:'用于综合服务楼升级改造及商铺装修'},
+      attachments:['营业执照.pdf','产权证明.pdf','股东决议.pdf'] },
+    { _id:'app002', orgId:'org002', orgName:'龙泉驿区柏合镇农村集体经济组织', type:'挂牌申请',
+      status:'pending', submitTime:'2026-04-05 09:15', reviewTime:'', reviewer:'', comment:'',
+      data:{assets:[{name:'农贸市场',area:'3500㎡',value:'600万元'},{name:'仓储中心',area:'2000㎡',value:'380万元'}],
+            financeProduct:'农业供应链金融', amount:'500万', purpose:'市场冷链设施扩建'},
+      attachments:['营业执照.pdf','产权证明.pdf'] },
+    { _id:'app003', orgId:'org003', orgName:'温江区柳城街道农村集体经济组织', type:'融资申请',
+      status:'approved', submitTime:'2026-04-10 16:00', reviewTime:'2026-04-11 11:30',
+      reviewer:'管理员', comment:'项目符合乡村振兴方向，同意推荐对接金融机构。',
+      data:{financeProduct:'乡村振兴专项贷', amount:'500万', purpose:'文创园区二期建设', period:'3年'},
+      attachments:['融资申请书.pdf','项目可行性报告.pdf'] }
+  ],
+  news_feed: [
+    { _id:'news001', type:'policy', title:'成都市乡村振兴专项资金申报通知', summary:'2026年度成都市乡村振兴专项资金开始接受申报...',
+      content:'...', source:'市农业农村局', time:'2026-06-20', important:true },
+    { _id:'news002', type:'system', title:'平台完成首批6家组织挂牌审核', summary:'成都农交所平台已完成首批6家农村集体经济组织的挂牌资料审核...',
+      content:'...', source:'成都农交所', time:'2026-06-18', important:false },
+    { _id:'news003', type:'activity', title:'农村集体产权制度改革培训班报名', summary:'定于6月25日举办农村集体产权制度改革专题培训...',
+      content:'...', source:'市农业农村局', time:'2026-06-15', important:false },
+    { _id:'news004', type:'success', title:'龙泉驿区龙泉街道成功获得普惠涉农贷授信', summary:'该组织通过本平台成功获得银行1000万元授信支持...',
+      content:'...', source:'成都农交所', time:'2026-06-10', important:true },
+    { _id:'news005', type:'notice', title:'关于规范农村集体资产流转交易的通知', summary:'为进一步规范农村集体资产流转交易行为，保障农民权益...',
+      content:'...', source:'省农业农村厅', time:'2026-06-05', important:false },
+    { _id:'news006', type:'data', title:'5月全市农村产权交易数据发布', summary:'5月全市共完成农村产权交易项目127个，交易总额达3.2亿元...',
+      content:'...', source:'成都农交所', time:'2026-06-01', important:false },
+    { _id:'news007', type:'policy', title:'四川省农村集体经济组织财务管理新规出台', summary:'省农业农村厅印发《四川省农村集体经济组织财务管理办法》...',
+      content:'...', source:'省农业农村厅', time:'2026-05-28', important:true }
+  ],
+  products: [] // 金融产品动态加载
+};
+
+// ===== CloudBase JS SDK 初始化与匿名登录 =====
+
+async function cbSdkInit() {
+  try {
+    cloudbaseApp = cloudbase.init({ env: ENV_ID });
+    authInstance = cloudbaseApp.auth();
+    await authInstance.signInAnonymously();
+    console.log('[SDK] ✅ 匿名登录成功');
+    return true;
+  } catch(e) {
+    console.warn('[SDK] ⚠️ 匿名登录失败:', e.message);
+    return false;
+  }
+}
+
+// ===== 双模式 DB Wrapper（CloudBase SDK / 本地数据 自动切换）=====
+function createDbWrapper(mode) {
+  mode = mode || dbMode;
+
+  function Collection(name) {
+    this._name = name; this._query = {}; this._orderBy = null;
+    this._limit = 100; this._offset = 0;
+  }
+  Collection.prototype.where = function(q) { this._query = q || {}; return this; };
+  Collection.prototype.orderBy = function(f, d) { this._orderBy = [f, d]; return this; };
+  Collection.prototype.limit = function(n) { this._limit = n; return this; };
+  Collection.prototype.skip = function(n) { this._offset = n; return this; };
+
+  // ---- SDK 模式：使用 cloudbase.database() API ----
+  Collection.prototype._sdkGet = async function() {
+    try {
+      var coll = cloudbaseApp.database().collection(this._name);
+      var q = coll;
+      var queryObj = this._query || {};
+      var keys = Object.keys(queryObj);
+      if (keys.length > 0) {
+        for (var i = 0; i < keys.length; i++) {
+          q = q.where({ [keys[i]]: queryObj[keys[i]] });
+        }
+      }
+      if (this._orderBy) {
+        var dir = this._orderBy[1] === 'asc' ? 'asc' : 'desc';
+        q = q.orderBy(this._orderBy[0], dir);
+      }
+      if (this._limit) q = q.limit(this._limit);
+      if (this._offset) q = q.skip(this._offset);
+      var res = await q.get();
+      return { data: res.data || [] };
+    } catch(e) {
+      console.warn('[SDK-DB] get失败:', this._name, e.message);
+      return { data: [] };
+    }
+  };
+  Collection.prototype._sdkAdd = async function(data) {
+    try {
+      var coll = cloudbaseApp.database().collection(this._name);
+      var arr = Array.isArray(data) ? data : [data];
+      var res = await coll.add(arr);
+      return { code: 0, ids: res.ids || [] };
+    } catch(e) {
+      console.warn('[SDK-DB] add失败:', this._name, e.message);
+      return { code: -1, error: e.message };
+    }
+  };
+  Collection.prototype._sdkCount = async function() {
+    try {
+      var coll = cloudbaseApp.database().collection(this._name);
+      var q = coll;
+      var queryObj = this._query || {};
+      var keys = Object.keys(queryObj);
+      if (keys.length > 0) {
+        for (var i = 0; i < keys.length; i++) {
+          q = q.where({ [keys[i]]: queryObj[keys[i]] });
+        }
+      }
+      var res = await q.count();
+      return { data: res.total || 0 };
+    } catch(e) {
+      console.warn('[SDK-DB] count失败:', this._name, e.message);
+      return { data: 0 };
+    }
+  };
+
+  // ---- 本地模式：查询内存中的内置数据 ----
+  Collection.prototype._localGet = async function() {
+    var dataset = LOCAL_DATA[this._name];
+    if (!dataset) { console.warn('[Local-DB] 集合不存在:', this._name); return { data: [] }; }
+    var results = dataset.slice();
+    var q = this._query || {};
+    // where 过滤
+    Object.keys(q).forEach(function(k) {
+      results = results.filter(function(r) { return r[k] == q[k]; });
+    });
+    // 排序
+    if (this._orderBy) {
+      var f = this._orderBy[0], d = this._orderBy[1];
+      results.sort(function(a,b) { var va=a[f]||'', vb=b[f]||''; return d===1?va.localeCompare(vb):vb.localeCompare(va); });
+    }
+    // 分页
+    var total = results.length;
+    if (this._offset > 0) results = results.slice(this._offset);
+    if (this._limit < total) results = results.slice(0, this._limit);
+    console.log('[Local-DB]', this._name, '.get() →', results.length, '条');
+    return { data: results };
+  };
+  Collection.prototype._localAdd = async function(data) {
+    var arr = Array.isArray(data) ? data : [data];
+    arr.forEach(function(item) { item._id = item._id || ('local_' + Date.now() + '_' + Math.random().toString(36).substr(2,6));
+      if (!LOCAL_DATA[this._name]) LOCAL_DATA[this._name] = []; LOCAL_DATA[this._name].push(item); }.bind(this));
+    console.log('[Local-DB]', this._name, '.add() → 新增', arr.length, '条');
+    return { code: 0, ids: arr.map(function(i){return i._id;}) };
+  };
+  Collection.prototype._localCount = async function() {
+    var dataset = LOCAL_DATA[this._name];
+    if (!dataset) return { data: 0 };
+    var q = this._query || {};
+    var c = dataset.filter(function(r) { return Object.keys(q).every(function(k){return r[k]==q[k];}); }).length;
+    return { data: c };
+  };
+
+  // ---- 统一接口：根据 mode 选择实现 ----
+  Collection.prototype.get = mode === 'local' ? Collection.prototype._localGet : Collection.prototype._sdkGet;
+  Collection.prototype.add = mode === 'local' ? Collection.prototype._localAdd : Collection.prototype._sdkAdd;
+  Collection.prototype.count = mode === 'local' ? Collection.prototype._localCount : Collection.prototype._sdkCount;
+
+  Collection.prototype.doc = function(id) {
+    var self = this;
+    return {
+      update: async function(updateData) {
+        if (mode === 'local') {
+          var ds = LOCAL_DATA[self._name];
+          if (ds) { var item = ds.find(function(r){return r._id===id;}); if(item) Object.assign(item,updateData); }
+          return {code:0};
+        }
+        try {
+          return await cloudbaseApp.database().collection(self._name).doc(id).update(updateData);
+        } catch(e) { return {code:-1, error:e.message}; }
+      },
+      remove: async function() {
+        if (mode === 'local') {
+          var ds = LOCAL_DATA[self._name];
+          if (ds) LOCAL_DATA[self._name] = ds.filter(function(r){return r._id!==id;});
+          return {code:0};
+        }
+        try {
+          return await cloudbaseApp.database().collection(self._name).doc(id).remove();
+        } catch(e) { return {code:-1, error:e.message}; }
+      }
+    };
+  };
+
+  return { collection: function(name) { return new Collection(name); } };
+}
+
+// ===== 初始化：自动检测 SDK 连接，失败则切换到本地数据 =====
+async function initCloudBase() {
+  try {
+    showLoading(true);
+    console.log('[Init] ===== 开始初始化 v3.0（SDK模式 + 本地回退）=====');
+
+    // Step 1: 初始化 CloudBase SDK 并匿名登录
+    console.log('[Init] Step 1: 初始化 CloudBase SDK...');
+    var sdkOk = await cbSdkInit();
+    if (sdkOk) {
+      console.log('[Init] ✅ SDK 匿名登录成功');
+    } else {
+      console.log('[Init] ⚠️ SDK 登录失败，准备使用本地模式');
+    }
+
+    // Step 2: 创建 SDK db wrapper 并测试连通性
+    if (sdkOk) {
+      db = createDbWrapper('remote');
+      console.log('[Init] Step 2: 测试 SDK 数据库...');
+      try {
+        var testRes = await db.collection('users_profile').limit(1).get();
+        if (testRes.data) {
+          dbMode = 'remote';
+          console.log('[Init] ✅ SDK 数据库连接正常！模式=remote，测试返回', testRes.data.length, '条');
+        } else { throw new Error('SDK test returned no data'); }
+      } catch(testErr) {
+        console.warn('[Init] ⚠️ SDK 数据库不可用:', testErr.message || testErr);
+        sdkOk = false; // 回退到本地
+      }
+    }
+
+    // Step 3: SDK 不可用 → 使用内置数据
+    if (!sdkOk) {
+      dbMode = 'local';
+      db = createDbWrapper('local');
+      console.log('[Init] ✅ 已切换至【本地数据模式】— 所有操作使用内置演示数据');
+      console.log('[Init] 内置用户数:', LOCAL_DATA.users_profile.length,
+                  ' 组织数:', LOCAL_DATA.organizations.length,
+                  ' 申请数:', LOCAL_DATA.applications.length);
+
+      // 显示提示
+      setTimeout(function() {
+        showToast('当前使用本地演示模式（远程服务器不可达）', 'info');
+      }, 500);
+    }
+
+    showLoading(false);
+    return true;
+  } catch(e) {
+    console.error('[Init] ❌ 初始化异常:', e.message);
+    // 即使异常也回退到本地模式
+    dbMode = 'local';
+    db = createDbWrapper('local');
+    showLoading(false);
+    return true;
+  }
+}
+
+// ===== Toast =====
+function showToast(msg, type) {
+  type = type || 'success';
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'toast ' + type;
+  setTimeout(function() { el.classList.add('show'); }, 10);
+  setTimeout(function() { el.classList.remove('show'); }, 3000);
+}
+
+// ===== Loading =====
+function showLoading(show) {
+  const mask = document.getElementById('loadingMask');
+  if (!mask) return;
+  if (show) mask.classList.remove('hidden');
+  else mask.classList.add('hidden');
+}
+
+// ===== 登录/注册 =====
+function showLoginForm() {
+  var regForm = document.getElementById('regForm');
+  var loginArea = document.getElementById('loginFormArea');
+  var regToggle = document.getElementById('regToggle');
+  var loginHint = document.getElementById('loginHint');
+  var loginSub = document.getElementById('loginSub');
+  var loginLogo = document.querySelector('.login-logo');
+  if (regForm) regForm.classList.remove('show');
+  if (loginArea) loginArea.classList.remove('hide');
+  if (regToggle) regToggle.classList.remove('hide');
+  if (loginHint) loginHint.classList.remove('hide');
+  if (loginSub) loginSub.classList.remove('hide');
+  if (loginLogo) loginLogo.classList.remove('hide');
+}
+
+function showRegForm() {
+  var regForm = document.getElementById('regForm');
+  var loginArea = document.getElementById('loginFormArea');
+  var regToggle = document.getElementById('regToggle');
+  var loginHint = document.getElementById('loginHint');
+  var loginSub = document.getElementById('loginSub');
+  var loginLogo = document.querySelector('.login-logo');
+  if (regForm) regForm.classList.add('show');
+  if (loginArea) loginArea.classList.add('hide');
+  if (regToggle) regToggle.classList.add('hide');
+  if (loginHint) loginHint.classList.add('hide');
+  if (loginSub) loginSub.classList.add('hide');
+  if (loginLogo) loginLogo.classList.add('hide');
+}
+
+// 登录
+async function doLogin() {
+  var username = (document.getElementById('loginUsername') || {}).value || '';
+  username = username.trim();
+  var password = (document.getElementById('loginPassword') || {}).value || '';
+  var errEl = document.getElementById('loginError');
+  if (!username || !password) {
+    if (errEl) { errEl.textContent = '请输入用户名和密码'; errEl.classList.add('show'); }
+    return;
+  }
+  if (errEl) errEl.classList.remove('show');
+  if (!db) {
+    if (errEl) { errEl.textContent = '数据库未连接，请刷新页面重试'; errEl.classList.add('show'); }
+    showLoading(false);
+    return;
+  }
+  showLoading(true);
+  try {
+    // SDK 模式：先用 SDK auth 登录，再查数据库获取用户信息
+    if (dbMode === 'remote' && authInstance) {
+      try {
+        await authInstance.signInWithPassword({ username: username, password: password });
+        console.log('[Login] ✅ SDK 用户名密码登录成功');
+      } catch(authErr) {
+        console.warn('[Login] SDK auth 登录失败:', authErr.message);
+        // SDK auth 失败但仍可通过数据库查询（匿名登录后已获得访问权限）
+      }
+    }
+    // 查数据库获取用户记录
+    var res = await db.collection('users_profile').where({ username: username, password: password }).get();
+    if (res.data.length === 0) {
+      // 尝试只用 username 查询（远程数据可能不存密码字段）
+      if (dbMode === 'remote') {
+        var res2 = await db.collection('users_profile').where({ username: username }).get();
+        if (res2.data.length > 0) {
+          // SDK auth 已经验证了密码，数据库记录不含密码也能登录
+          var userRec = res2.data[0];
+          currentUser = {
+            _id: userRec._id,
+            username: userRec.username,
+            role: userRec.role || 'org',
+            orgId: userRec.orgId || null,
+            orgCode: userRec.orgCode || null,
+            displayName: userRec.displayName || userRec.username,
+            avatar: userRec.avatar || '农',
+            phone: userRec.phone || '',
+            orgName: userRec.orgName || '',
+          };
+        } else {
+          if (errEl) { errEl.textContent = '用户名或密码错误'; errEl.classList.add('show'); }
+          showLoading(false);
+          return;
+        }
+      } else {
+        if (errEl) { errEl.textContent = '用户名或密码错误'; errEl.classList.add('show'); }
+        showLoading(false);
+        return;
+      }
+    } else {
+      var userRec = res.data[0];
+      currentUser = {
+        _id: userRec._id,
+        username: userRec.username,
+        role: userRec.role || 'org',
+        orgId: userRec.orgId || null,
+        orgCode: userRec.orgCode || null,
+        displayName: userRec.displayName || userRec.username,
+        avatar: userRec.avatar || '农',
+        phone: userRec.phone || '',
+        orgName: userRec.orgName || '',
+      };
+    }
+    if (currentUser.orgCode) {
+      try {
+        var orgRes = await db.collection('organizations').where({ code: currentUser.orgCode }).get();
+        if (orgRes.data.length > 0) {
+          currentUser.orgData = orgRes.data[0];
+        }
+      } catch(e) { console.warn('[Login] 加载组织数据失败', e); }
+    }
+    sessionStorage.setItem('nja_current_user', JSON.stringify(currentUser));
+    onLoginSuccess();
+  } catch(e) {
+    console.error('[Login] 错误：', e);
+    if (errEl) { errEl.textContent = '登录失败：' + (e.message || '网络错误'); errEl.classList.add('show'); }
+  }
+  showLoading(false);
+}
+
+// 注册
+async function doRegister() {
+  var username = ((document.getElementById('regUsername') || {}).value || '').trim();
+  var pwd = (document.getElementById('regPassword') || {}).value || '';
+  var pwd2 = (document.getElementById('regPassword2') || {}).value || '';
+  var orgName = ((document.getElementById('regOrgName') || {}).value || '').trim();
+  var shortName = ((document.getElementById('regShortName') || {}).value || '').trim();
+  var contact = ((document.getElementById('regContact') || {}).value || '').trim();
+  var district = ((document.getElementById('regDistrict') || {}).value || '').trim();
+  var phone = ((document.getElementById('regPhone') || {}).value || '').trim();
+  var errEl = document.getElementById('regError');
+
+  if (!username || !pwd || !orgName || !shortName || !contact || !district) {
+    if (errEl) { errEl.textContent = '请填写所有必填项（带 * 的字段）'; errEl.classList.add('show'); }
+    return;
+  }
+  if (pwd !== pwd2) {
+    if (errEl) { errEl.textContent = '两次输入的密码不一致'; errEl.classList.add('show'); }
+    return;
+  }
+  if (username.length < 3) {
+    if (errEl) { errEl.textContent = '用户名至少需要3个字符'; errEl.classList.add('show'); }
+    return;
+  }
+  if (pwd.length < 4) {
+    if (errEl) { errEl.textContent = '密码至少需要4位'; errEl.classList.add('show'); }
+    return;
+  }
+  if (errEl) errEl.classList.remove('show');
+  showLoading(true);
+  try {
+    var existRes = await db.collection('users_profile').where({ username: username }).get();
+    if (existRes.data.length > 0) {
+      if (errEl) { errEl.textContent = '用户名已存在，请选择其他用户名'; errEl.classList.add('show'); }
+      showLoading(false);
+      return;
+    }
+    var userRec = {
+      username: username,
+      password: pwd,
+      role: 'org',
+      orgName: orgName,
+      shortName: shortName,
+      contact: contact,
+      district: district,
+      phone: phone,
+      status: 'pending',
+      createdAt: new Date(),
+    };
+    await db.collection('users_profile').add(userRec);
+    showToast('注册成功！请等待管理员审核通过后登录', 'success');
+    showLoginForm();
+  } catch(e) {
+    console.error('[Register] 错误：', e);
+    if (errEl) { errEl.textContent = '注册失败：' + (e.message || '网络错误'); errEl.classList.add('show'); }
+  }
+  showLoading(false);
+}
+
+function onLoginSuccess() {
+  var overlay = document.getElementById('loginOverlay');
+  if (overlay) overlay.classList.add('hidden');
+  var avatarEl = document.getElementById('userAvatar');
+  var nameEl = document.getElementById('userName');
+  var roleEl = document.getElementById('userRole');
+  if (avatarEl) avatarEl.textContent = (currentUser || {}).avatar || '农';
+  if (nameEl) nameEl.textContent = (currentUser || {}).displayName || '';
+  if (roleEl) roleEl.textContent = (currentUser && currentUser.role === 'reviewer') ? '审核员' : ((currentUser || {}).orgName || '');
+  var reviewerEls = document.querySelectorAll('.reviewer-only');
+  for (var i = 0; i < reviewerEls.length; i++) { reviewerEls[i].style.display = 'none'; }
+  if (currentUser && currentUser.role === 'reviewer') {
+    for (var j = 0; j < reviewerEls.length; j++) { reviewerEls[j].style.display = 'flex'; }
+    loadPendingCount();
+  }
+  loadDashboardData();
+  navTo(0);
+}
+
+function logout() {
+  currentUser = null;
+  sessionStorage.removeItem('nja_current_user');
+  var overlay = document.getElementById('loginOverlay');
+  if (overlay) overlay.classList.remove('hidden');
+  var userEl = document.getElementById('loginUsername');
+  var passEl = document.getElementById('loginPassword');
+  if (userEl) userEl.value = '';
+  if (passEl) passEl.value = '';
+  var errEl = document.getElementById('loginError');
+  if (errEl) errEl.classList.remove('show');
+  var reviewerEls = document.querySelectorAll('.reviewer-only');
+  for (var i = 0; i < reviewerEls.length; i++) { reviewerEls[i].style.display = 'none'; }
+}
+
+// ===== 导航 =====
+function navTo(screenIdx) {
+  var screens = document.querySelectorAll('.screen');
+  for (var i = 0; i < screens.length; i++) { if (screens[i]) screens[i].classList.remove('active'); }
+  var navBtns = document.querySelectorAll('.nav-item');
+  for (var i = 0; i < navBtns.length; i++) { if (navBtns[i]) navBtns[i].classList.remove('active'); }
+  var target = document.getElementById('screen-' + screenIdx);
+  if (target) target.classList.add('active');
+  var navBtn = document.querySelector('.nav-item[data-screen="' + screenIdx + '"]');
+  if (navBtn) navBtn.classList.add('active');
+  if (screenIdx === 0) loadDashboardData();
+  if (screenIdx === 1) loadListingData();
+  if (screenIdx === 3) loadFinanceDynamic();
+  if (screenIdx === 4) loadFactorCounts();
+  if (screenIdx === 5) loadScreen5();
+  if (screenIdx === 7) initFinanceForm();
+  if (screenIdx === 8) loadCodeSystemTable();
+  if (screenIdx === 9) { if (currentUser && currentUser.role === 'reviewer') renderReviewList('listing'); }
+}
+
+// ===== 仪表盘 =====
+async function loadDashboardData() {
+  try {
+    var orgRes = await db.collection('organizations').get();
+    orgData = orgRes.data || [];
+    // 适配：远程数据可能status='listed', 本地数据也是'listed'
+    // 在界面显示时统一翻译，查询不再按中文状态筛选
+    var kpiOrg = document.getElementById('kpiOrgCount');
+    var kpiOrgSub = document.getElementById('kpiOrgSub');
+    if (kpiOrg) kpiOrg.innerHTML = orgData.length + '<span class="kpi-unit">家</span>';
+    if (kpiOrgSub) kpiOrgSub.textContent = '已加载 ' + orgData.length + ' 家组织';
+
+    var totalAssets = 0;
+    for (var i = 0; i < orgData.length; i++) { totalAssets += calcTotalAssets(orgData[i]); }
+    var kpiAsset = document.getElementById('kpiAssetScale');
+    var kpiAssetSub = document.getElementById('kpiAssetSub');
+    if (kpiAsset) kpiAsset.innerHTML = formatValue(totalAssets) + '<span class="kpi-unit">元</span>';
+    if (kpiAssetSub) kpiAssetSub.textContent = '覆盖 ' + orgData.length + ' 家组织';
+
+    var appRes = await db.collection('applications').get();
+    applications = appRes.data || [];
+    var financeApps = [];
+    for (var i = 0; i < applications.length; i++) { if (applications[i].type && applications[i].type.startsWith('finance')) financeApps.push(applications[i]); }
+    var kpiFin = document.getElementById('kpiFinanceCount');
+    var kpiFinSub = document.getElementById('kpiFinanceSub');
+    if (kpiFin) kpiFin.innerHTML = financeApps.length + '<span class="kpi-unit">笔</span>';
+    if (kpiFinSub) kpiFinSub.textContent = financeApps.length + ' 笔投融资申请';
+
+    var factorCount = 0;
+    // 从 orgData 的 factors 字段统计要素数量
+    for (var i = 0; i < orgData.length; i++) {
+      var factors = orgData[i].factors || {};
+      for (var t = 0; t < FACTOR_TYPES.length; t++) {
+        var items = factors[FACTOR_TYPES[t]];
+        if (!items) continue;
+        if (typeof items === 'string' && items) factorCount++;
+        else if (Array.isArray(items)) factorCount += items.length;
+      }
+    }
+    // 远程数据补充
+    try {
+      var factorRes = await db.collection('factor_items').get();
+      var remoteFactorItems = factorRes.data || [];
+      factorCount += remoteFactorItems.length;
+    } catch(e) { /* 本地数据模式 */ }
+    var kpiFactor = document.getElementById('kpiFactorCount');
+    var kpiFactorSub = document.getElementById('kpiFactorSub');
+    if (kpiFactor) kpiFactor.innerHTML = factorCount + '<span class="kpi-unit">项</span>';
+    if (kpiFactorSub) kpiFactorSub.textContent = factorCount + ' 项要素对接';
+
+    renderDistrictChart(orgData);
+    loadNewsFeed();
+
+    var timeEl = document.getElementById('dataUpdateTime');
+    if (timeEl) timeEl.textContent = '数据更新于 ' + new Date().toLocaleDateString('zh-CN');
+
+    var listingBadge = document.getElementById('listingOrgBadge');
+    if (listingBadge) listingBadge.textContent = orgData.length + ' 家挂牌组织';
+    var listingCount = document.getElementById('listingOrgCount');
+    if (listingCount) listingCount.textContent = orgData.length;
+  } catch(e) {
+    console.error('[Dashboard] 加载失败：', e);
+    showToast('数据加载失败，请刷新重试', 'error');
+  }
+}
+
+// 区县分布图
+function renderDistrictChart(data) {
+  var el = document.getElementById('districtChart');
+  if (!el) return;
+  var districtCount = {};
+  for (var i = 0; i < data.length; i++) {
+    var d = data[i].district || '未知';
+    districtCount[d] = (districtCount[d] || 0) + 1;
+  }
+  var sorted = [];
+  for (var key in districtCount) { sorted.push([key, districtCount[key]]); }
+  sorted.sort(function(a, b) { return b[1] - a[1]; });
+  var colors = ['#14731C','#1A5C1A','#228B22','#2E7D32','#43A047','#66BB6A'];
+  var maxCount = sorted.length > 0 ? sorted[0][1] : 1;
+  var html = '';
+  for (var i = 0; i < sorted.length; i++) {
+    var height = Math.max(40, (sorted[i][1] / maxCount) * 120);
+    html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px">' +
+      '<div style="width:60px;height:' + height + 'px;background:linear-gradient(180deg,' + colors[i % colors.length] + 'CC,' + colors[i % colors.length] + ');border-radius:6px 6px 0 0"></div>' +
+      '<span style="font-size:11px;color:var(--text-gray)">' + sorted[i][0] + '</span>' +
+      '</div>';
+  }
+  el.innerHTML = html;
+  var badge = document.getElementById('districtCountBadge');
+  if (badge) badge.textContent = sorted.length + ' 个区县';
+}
+
+// 加载动态
+async function loadNewsFeed() {
+  try {
+    var res = await db.collection('news_feed').orderBy('createdAt', 'desc').limit(10).get();
+    newsFeed = res.data || [];
+    var el = document.getElementById('newsFeed');
+    if (!el) return;
+    if (newsFeed.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-light)">暂无动态</div>';
+    } else {
+      var html = '';
+      for (var i = 0; i < newsFeed.length; i++) {
+        var n = newsFeed[i];
+        html += '<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light)">' +
+          '<span style="font-size:10px;color:var(--text-light);white-space:nowrap">' + (n.date || '') + '</span>' +
+          '<span style="font-size:13px;color:var(--text-dark)">' + (n.content || '') + '</span>' +
+          '</div>';
+      }
+      el.innerHTML = html;
+    }
+  } catch(e) {
+    var el2 = document.getElementById('newsFeed');
+    if (el2) el2.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-light)">动态加载失败</div>';
+  }
+}
+
+// ===== 挂牌大厅 =====
+async function loadListingData() {
+  try {
+    var res = await db.collection('organizations').limit(50).get();
+    orgData = res.data || [];
+    renderListingGrid(orgData);
+    var badge = document.getElementById('listingOrgBadge');
+    if (badge) badge.textContent = orgData.length + ' 家挂牌组织';
+    var countEl = document.getElementById('listingOrgCount');
+    if (countEl) countEl.textContent = orgData.length;
+  } catch(e) {
+    console.error('[Listing] 加载失败：', e);
+    showToast('挂牌数据加载失败', 'error');
+  }
+}
+
+function renderListingGrid(data) {
+  var grid = document.getElementById('listingGrid');
+  if (!grid) return;
+  if (data.length === 0) {
+    grid.innerHTML = '<div style="text-align:center;padding:40px;color:#999;grid-column:1/-1">暂无挂牌组织</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < data.length; i++) {
+    var org = data[i];
+    var code = org.code || '';
+    var parts = code.split('-');
+    var codeDisplay = parts.length === 3 ?
+      '<span class="njc-tag">NJC</span>' + (parts[1] || '') + '·' + (parts[2] || '') :
+      code;
+    var totalAssetsVal = calcTotalAssets(org);
+    html += '<div class="org-card" onclick="navToOrgDetail(' + i + ')">' +
+      '<div class="org-card-codebar">' +
+      '<div class="code-main">' + codeDisplay + '</div>' +
+      '<span class="status-chip ' + ((org.status === 'listed' || org.status === '正常挂牌') ? 'active' : 'pending') + '">' + transStatus(org.status) + '</span>' +
+      '</div>' +
+      '<div class="org-card-body">' +
+      '<div class="org-name">' + (org.name || '未知组织') + '</div>' +
+      '<div class="org-subtitle">' + (org.district || '') + ' · ' + (org.type || '') + '</div>' +
+      '</div>' +
+      '<div class="org-card-footer">' +
+      '<span style="font-size:11px;color:var(--text-light)">总资产：' + formatValue(totalAssetsVal) + '</span>' +
+      '<span style="font-size:11px;color:var(--text-light)">要素：' + (Object.keys(org.factors || {}).length) + ' 类</span>' +
+      '</div>' +
+      '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+// 挂牌筛选
+function filterListing() {
+  var district = ((document.getElementById('filterDistrict') || {}).value || '').trim();
+  var status = ((document.getElementById('filterStatus') || {}).value || '').trim();
+  var search = ((document.getElementById('filterSearch') || {}).value || '').trim().toLowerCase();
+  var filtered = [];
+  for (var i = 0; i < orgData.length; i++) {
+    var o = orgData[i];
+    if (district && o.district !== district) continue;
+    if (status && transStatus(o.status) !== status) continue;
+    if (search) {
+      var name = (o.name || '').toLowerCase();
+      var code = (o.code || '').toLowerCase();
+      var shortName = (o.shortName || '').toLowerCase();
+      if (name.indexOf(search) === -1 && code.indexOf(search) === -1 && shortName.indexOf(search) === -1) continue;
+    }
+    filtered.push(o);
+  }
+  renderListingGrid(filtered);
+  var statsEl = document.getElementById('listingStats');
+  if (statsEl) statsEl.innerHTML = '共 <strong>' + filtered.length + '</strong> 家挂牌组织';
+}
+
+// ===== 组织详情 =====
+function navToOrgDetail(idx) {
+  if (idx < 0 || idx >= orgData.length) return;
+  currentOrgIdx = idx;
+  lastViewedOrg = idx; // 供 screen-5 资产权益页面使用
+  navTo(2);
+  renderOrgDetail();
+}
+
+function renderOrgDetail() {
+  var org = orgData[currentOrgIdx];
+  if (!org) return;
+
+  // 代码
+  var codeEl = document.getElementById('detailCode');
+  if (codeEl) {
+    var parts = (org.code || '').split('-');
+    codeEl.innerHTML = '<span class="njc-tag">NJC</span>' + (parts[1]||'') + '·' + (parts[2]||'');
+  }
+  var codeSm = document.getElementById('detailCodeSm');
+  if (codeSm) {
+    var parts2 = (org.code || '').split('-');
+    codeSm.innerHTML = '<span class="njc-tag">NJC</span>' + (parts2[1]||'') + '·' + (parts2[2]||'');
+  }
+
+  // 名称 + 状态
+  var nameEl = document.getElementById('detailOrgName');
+  if (nameEl) nameEl.textContent = org.name || '未知组织';
+  var statusEl = document.getElementById('detailStatus');
+  if (statusEl) {
+    statusEl.textContent = transStatus(org.status);
+    statusEl.className = 'badge ' + transStatusClass(org.status);
+  }
+  var dateEl = document.getElementById('detailDate');
+  if (dateEl) dateEl.textContent = '挂牌日期: ' + (org.listedAt || (org.createdAt ? new Date(org.createdAt).toLocaleDateString('zh-CN') : '—'));
+
+  // 渲染各 Tab 数据
+  renderDetailBasic(org);
+  renderDetailAssets(org);
+  renderDetailResources(org);
+  renderDetailFinance(org);
+  renderDetailFactor(org);
+}
+
+function renderDetailBasic(org) {
+  var grid = document.getElementById('detailBasicGrid');
+  if (!grid) return;
+  var totalAssetVal = calcTotalAssets(org);
+  var items = [
+    ['组织名称', org.name || '—'],
+    ['挂牌代码', org.code || '—'],
+    ['简称', org.shortName || '—'],
+    ['所属区县', org.district || '—'],
+    ['组织类型', org.type || '—'],
+    ['法定代表人', org.legalPerson || '—'],
+    ['联系电话', org.phone || '—'],
+    ['注册地址', org.address || '—'],
+    ['总资产规模', totalAssetVal.toLocaleString() + ' 元 (' + formatValue(totalAssetVal) + ')'],
+    ['权益总额（万元）', (org.equityTotal || totalAssetVal || 0).toLocaleString()],
+    ['挂牌状态', transStatus(org.status)],
+    ['挂牌日期', org.listedAt || '—'],
+  ];
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    html += '<div style="padding:12px 16px;background:var(--bg-light);border-radius:var(--radius-sm)">' +
+      '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px">' + items[i][0] + '</div>' +
+      '<div style="font-size:13px;color:var(--text-dark);font-weight:500">' + items[i][1] + '</div>' +
+      '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function renderDetailAssets(org) {
+  var tbody = document.querySelector('#detailAssetTable tbody');
+  if (!tbody) return;
+  var assets = org.assets || [];
+  if (assets.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:20px">暂无资产明细</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < assets.length; i++) {
+    var a = assets[i];
+    html += '<tr>' +
+      '<td>' + (a.name || '—') + '</td>' +
+      '<td>' + transAssetType(a.type) + '</td>' +
+      '<td>' + formatArea(a.area) + '</td>' +
+      '<td>' + formatValue(a.value) + '</td>' +
+      '<td><span class="badge badge-green">已确权</span></td>' +
+      '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function renderDetailResources(org) {
+  var tbody = document.querySelector('#detailResourceTable tbody');
+  if (!tbody) return;
+  var factors = org.factors || {};
+  var rows = [];
+  var ftypes = ['tech','talent','data','capital'];
+  for (var t = 0; t < ftypes.length; t++) {
+    var items = factors[ftypes[t]];
+    if (!items) continue;
+    if (typeof items === 'string' && items) rows.push([items, transFactorType(ftypes[t]), '—', '—', '已确权']);
+    else if (Array.isArray(items)) {
+      for (var j = 0; j < items.length; j++) {
+        rows.push([items[j], transFactorType(ftypes[t]), '—', '—', '已确权']);
+      }
+    }
+  }
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:20px">暂无资源权益明细</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    html += '<tr>' +
+      '<td>' + r[0] + '</td>' +
+      '<td>' + r[1] + '</td>' +
+      '<td>' + r[2] + '</td>' +
+      '<td>' + r[3] + '</td>' +
+      '<td><span class="badge badge-green">' + r[4] + '</span></td>' +
+      '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function renderDetailFinance(org) {
+  var tbody = document.querySelector('#detailFinanceTable tbody');
+  if (!tbody) return;
+  var orgApps = [];
+  for (var i = 0; i < applications.length; i++) {
+    var app = applications[i];
+    // 匹配方式：orgId 或 orgName
+    var isMatch = (app.orgId === org._id) || (app.orgName === org.name) ||
+                  (app.orgCode === org.code);
+    var isFinance = app.type === '融资申请' || app.type === '挂牌申请' ||
+                    (app.type && app.type.indexOf('finance') >= 0);
+    if (isMatch) orgApps.push(app);
+  }
+  if (orgApps.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:20px">暂无投融资记录</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < orgApps.length; i++) {
+    var a = orgApps[i];
+    var appNo = a._id || a.appNo || '—';
+    var amountStr = (a.data && a.data.amount) ? a.data.amount : ((a.amount || 0).toLocaleString() + ' 万元');
+    var purpose = (a.data && a.data.purpose) ? a.data.purpose : (a.purpose || '—');
+    var productName = (a.data && a.data.financeProduct) ? a.data.financeProduct : (a.product || a.productName || '—');
+    var term = (a.data && a.data.period) ? a.data.period : (a.term || '—');
+    html += '<tr>' +
+      '<td>' + appNo + '</td>' +
+      '<td>' + amountStr + '</td>' +
+      '<td>' + term + '</td>' +
+      '<td>' + productName + ' — ' + purpose + '</td>' +
+      '<td><span class="badge ' + transStatusClass(a.status) + '">' + transStatus(a.status) + '</span></td>' +
+      '<td>' + (a.submitTime || (a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN') : '—')) + '</td>' +
+      '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function renderDetailFactor(org) {
+  var tbody = document.querySelector('#detailFactorTable tbody');
+  if (!tbody) return;
+  // 从组织数据的 factors 字段提取要素对接信息
+  var factors = org.factors || {};
+  var rows = [];
+  var ftypes = ['tech','talent','data','capital'];
+  for (var t = 0; t < ftypes.length; t++) {
+    var items = factors[ftypes[t]];
+    if (!items) continue;
+    if (typeof items === 'string' && items) {
+      rows.push({ name: items, type: transFactorType(ftypes[t]), counterparty: '城市供给侧', status: '对接中', date: org.listedAt || '—' });
+    } else if (Array.isArray(items)) {
+      for (var j = 0; j < items.length; j++) {
+        rows.push({ name: items[j], type: transFactorType(ftypes[t]), counterparty: '城市供给侧', status: '对接中', date: org.listedAt || '—' });
+      }
+    }
+  }
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:20px">暂无要素对接记录</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < rows.length; i++) {
+    var f = rows[i];
+    html += '<tr>' +
+      '<td>' + f.name + '</td>' +
+      '<td>' + f.type + '</td>' +
+      '<td>' + f.counterparty + '</td>' +
+      '<td><span class="badge badge-orange">' + f.status + '</span></td>' +
+      '<td>' + f.date + '</td>' +
+      '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+// 详情 Tab 切换
+function switchDetailTab(btn, tab) {
+  var btns = document.querySelectorAll('.tab-btn');
+  for (var i = 0; i < btns.length; i++) { if (btns[i]) btns[i].classList.remove('active'); }
+  if (btn) btn.classList.add('active');
+  var tabNames = ['basic','assets','resources','finance','factor'];
+  for (var i = 0; i < tabNames.length; i++) {
+    var el = document.getElementById('detailTab' + tabNames[i].charAt(0).toUpperCase() + tabNames[i].slice(1));
+    if (el) el.style.display = (tabNames[i] === tab) ? 'block' : 'none';
+  }
+}
+
+// 编辑组织详情
+function editOrgDetail() {
+  if (currentOrgIdx < 0) return;
+  var org = orgData[currentOrgIdx];
+  var newName = prompt('修改组织名称：', org.name || '');
+  if (newName === null) return;
+  var newPhone = prompt('修改联系电话：', org.phone || '');
+  if (newPhone === null) return;
+  showToast('编辑功能需要管理员权限，已记录修改申请', 'success');
+}
+
+// ===== 投融资服务 =====
+// selectFinanceProduct 已移至辅助函数区域（带组织上下文）
+
+async function loadFinanceDynamic() {
+  try {
+    // 兼容本地数据（type='融资申请'）和远程数据（type='finance'）
+    var remoteData = [];
+    try {
+      var res = await db.collection('applications').where({ type: 'finance' }).orderBy('createdAt', 'desc').limit(20).get();
+      remoteData = res.data || [];
+    } catch(e) { /* 远程查询失败，仅用本地数据 */ }
+    // 合并本地数据中的融资申请
+    var localFinanceApps = applications.filter(function(a) {
+      return a.type === '融资申请' || (a.type && a.type.indexOf('finance') >= 0);
+    });
+    var allFinanceApps = remoteData.slice();
+    // 避免重复
+    for (var i = 0; i < localFinanceApps.length; i++) {
+      var isDup = false;
+      for (var j = 0; j < allFinanceApps.length; j++) {
+        if (allFinanceApps[j]._id === localFinanceApps[i]._id) { isDup = true; break; }
+      }
+      if (!isDup) allFinanceApps.push(localFinanceApps[i]);
+    }
+    var tbody = document.querySelector('#financeDynamicTable tbody');
+    if (!tbody) return;
+    if (allFinanceApps.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:40px">暂无投融资记录</td></tr>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < allFinanceApps.length; i++) {
+      var a = allFinanceApps[i];
+      var amountStr = (a.data && a.data.amount) ? a.data.amount : ((a.amount || 0).toLocaleString() + ' 万元');
+      var productName = (a.data && a.data.financeProduct) ? a.data.financeProduct : (a.product || a.productName || '—');
+      html += '<tr>' +
+        '<td>' + (a.orgName || '—') + '</td>' +
+        '<td>' + ((a.orgCode || a.code || a._id) ? '<span class="njc-tag">NJC</span>' + (a.orgCode || a.code || a._id) : '—') + '</td>' +
+        '<td>' + amountStr + '</td>' +
+        '<td>' + productName + '</td>' +
+        '<td><span class="badge ' + transStatusClass(a.status) + '">' + transStatus(a.status) + '</span></td>' +
+        '<td>' + (a.submitTime || (a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN') : '—')) + '</td>' +
+        '</tr>';
+    }
+    tbody.innerHTML = html;
+  } catch(e) {
+    console.error('[Finance] 动态加载失败', e);
+  }
+}
+
+function renderFinanceApplicationForm() {
+  var formArea = document.getElementById('financeAppForm');
+  if (!formArea || selectedFinanceProduct === null) return;
+  var p = FINANCE_PRODUCTS[selectedFinanceProduct];
+  formArea.innerHTML = '<div style="background:var(--bg-light);padding:16px;border-radius:var(--radius-md);margin-bottom:16px">' +
+    '<div style="font-size:15px;font-weight:600;color:var(--text-dark);margin-bottom:4px">' + p.icon + ' ' + p.name + '</div>' +
+    '<div style="font-size:12px;color:var(--text-gray)">' + p.desc + '</div>' +
+    '<div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--text-mid)">' +
+    '<span>💰 ' + p.max + '</span><span>📅 ' + p.term + '</span>' +
+    '</div>' +
+    '</div>';
+}
+
+// ===== 城乡要素市场 =====
+async function loadFactorCounts() {
+  try {
+    // 从 orgData 的 factors 字段提取要素数量（本地数据和远程数据统一处理）
+    var counts = { tech:0, talent:0, data:0, capital:0 };
+    var totalItems = 0;
+    for (var i = 0; i < orgData.length; i++) {
+      var factors = orgData[i].factors || {};
+      for (var t = 0; t < FACTOR_TYPES.length; t++) {
+        var ft = FACTOR_TYPES[t];
+        var items = factors[ft];
+        if (!items) continue;
+        if (typeof items === 'string' && items) { counts[ft]++; totalItems++; }
+        else if (Array.isArray(items)) { counts[ft] += items.length; totalItems += items.length; }
+      }
+    }
+    // 远程数据也尝试从 factor_items 集合补充
+    try {
+      var res = await db.collection('factor_items').get();
+      var remoteItems = res.data || [];
+      for (var i = 0; i < remoteItems.length; i++) {
+        if (counts.hasOwnProperty(remoteItems[i].type)) { counts[remoteItems[i].type]++; totalItems++; }
+      }
+    } catch(e) { /* 本地数据模式时 factor_items 不存在，忽略 */ }
+
+    for (var i = 0; i < FACTOR_TYPES.length; i++) {
+      var el = document.getElementById('factor' + FACTOR_TYPES[i].charAt(0).toUpperCase() + FACTOR_TYPES[i].slice(1) + 'Count');
+      if (el) el.textContent = counts[FACTOR_TYPES[i]] + ' 项';
+    }
+    var statsEl = document.getElementById('factorStats');
+    if (statsEl) statsEl.innerHTML = orgData.length + ' 家集体经济组织<br>覆盖各区县 · ' + totalItems + ' 项要素对接';
+  } catch(e) {
+    console.warn('[Factor] 加载失败', e);
+  }
+}
+
+function showFactorSub(type) {
+  var mainEl = document.getElementById('factorMain');
+  if (mainEl) mainEl.style.display = 'none';
+  // 隐藏所有子页先
+  for (var i = 0; i < FACTOR_TYPES.length; i++) {
+    var el = document.getElementById('factor-' + FACTOR_TYPES[i]);
+    if (el) el.style.display = 'none';
+  }
+  // 显示目标子页
+  var subEl = document.getElementById('factor-' + type);
+  if (subEl) subEl.style.display = 'block';
+  loadFactorSubData(type);
+}
+
+function showFactorMain() {
+  var mainEl = document.getElementById('factorMain');
+  if (mainEl) mainEl.style.display = 'block';
+  for (var i = 0; i < FACTOR_TYPES.length; i++) {
+    var subEl = document.getElementById('factor-' + FACTOR_TYPES[i]);
+    if (subEl) subEl.style.display = 'none';
+  }
+}
+
+async function loadFactorSubData(type) {
+  var typeLabel = transFactorType(type);
+  var tbody = document.querySelector('#factor' + type.charAt(0).toUpperCase() + type.slice(1) + 'Table tbody');
+  if (!tbody) return;
+
+  // 从 orgData 提取该类型的要素数据
+  var rows = [];
+  for (var i = 0; i < orgData.length; i++) {
+    var org = orgData[i];
+    var factors = org.factors || {};
+    var items = factors[type];
+    if (!items) continue;
+    if (typeof items === 'string' && items) {
+      rows.push({
+        name: items,
+        field: org.district || '—',
+        supplier: '成都市' + (org.district || ''),
+        demandSide: org.shortName || org.name || '—',
+        status: '对接中',
+        date: org.listedAt || '—',
+        orgIdx: i
+      });
+    } else if (Array.isArray(items)) {
+      for (var j = 0; j < items.length; j++) {
+        rows.push({
+          name: items[j],
+          field: org.district || '—',
+          supplier: '成都市' + (org.district || ''),
+          demandSide: org.shortName || org.name || '—',
+          status: '对接中',
+          date: org.listedAt || '—',
+          orgIdx: i
+        });
+      }
+    }
+  }
+  // 远程数据补充（如果 factor_items 集合存在）
+  try {
+    var res = await db.collection('factor_items').where({ type: type }).orderBy('createdAt', 'desc').limit(50).get();
+    var remoteData = res.data || [];
+    for (var i = 0; i < remoteData.length; i++) {
+      var f = remoteData[i];
+      // 避免重复
+      var isDup = false;
+      for (var j = 0; j < rows.length; j++) {
+        if (rows[j].name === (f.name || '')) { isDup = true; break; }
+      }
+      if (!isDup) {
+        rows.push({
+          name: f.name || '—',
+          field: f.field || '—',
+          supplier: f.supplier || '—',
+          demandSide: f.demandSide || '—',
+          status: f.status || '对接中',
+          date: f.date || '—',
+          orgIdx: -1
+        });
+      }
+    }
+  } catch(e) { /* 本地数据模式，无 factor_items 集合 */ }
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:20px">暂无' + typeLabel + '数据，请先挂牌组织并完善要素信息</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < rows.length; i++) {
+    var f = rows[i];
+    var statusBadge = (f.status === '已完成') ? 'badge-green' : 'badge-orange';
+    var viewBtn = f.orgIdx >= 0 ?
+      '<button class="btn btn-sm btn-outline" onclick="navToOrgDetail(' + f.orgIdx + ')">查看组织</button>' :
+      '<button class="btn btn-sm btn-outline" onclick="showToast(\'详情功能开发中\',\'success\')">查看</button>';
+    html += '<tr>' +
+      '<td>' + f.name + '</td>' +
+      '<td>' + f.field + '</td>' +
+      '<td>' + f.supplier + '</td>' +
+      '<td>' + f.demandSide + '</td>' +
+      '<td><span class="badge ' + statusBadge + '">' + f.status + '</span></td>' +
+      '<td>' + f.date + '</td>' +
+      '<td>' + viewBtn + '</td>' +
+      '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function addFactorItem(type) {
+  var name = prompt('请输入要素项目名称：');
+  if (!name) return;
+  showToast('添加要素项目功能需管理员权限，已记录添加申请', 'success');
+}
+
+// ===== 申请挂牌（多步骤）=====
+function listingStep(step) {
+  if (step < 1 || step > 3) return;
+  // 验证步骤 1 -> 2
+  if (step === 2) {
+    var orgName = ((document.getElementById('orgName') || {}).value || '').trim();
+    if (!orgName) { showToast('请填写组织名称', 'error'); return; }
+  }
+  // 验证步骤 2 -> 3
+  if (step === 3) {
+    if (uploadedFiles.length === 0) { showToast('请至少上传一份证明材料', 'error'); return; }
+    renderListingSummary();
+  }
+  currentListingStep = step;
+  // 更新步骤 UI
+  for (var i = 1; i <= 3; i++) {
+    var stepEl = document.getElementById('step' + i);
+    var panelEl = document.getElementById('stepPanel' + i);
+    if (stepEl) {
+      stepEl.classList.remove('active', 'done');
+      if (i === step) stepEl.classList.add('active');
+      else if (i < step) stepEl.classList.add('done');
+    }
+    if (panelEl) panelEl.style.display = (i === step) ? 'block' : 'none';
+  }
+  // 更新状态 badge
+  var statusEl = document.getElementById('listingStatus');
+  if (statusEl) {
+    statusEl.textContent = '待提交';
+    statusEl.className = 'badge badge-orange';
+  }
+}
+
+function simulateUpload(type) {
+  showToast('正在上传 ' + type + ' 文件...', 'success');
+  setTimeout(function() {
+    var fileName = type === 'cert' ? '农村集体经济组织登记证书.pdf' : '成员名册.xlsx';
+    uploadedFiles.push({ type: type, name: fileName, uploadedAt: new Date().toLocaleString('zh-CN') });
+    renderUploadedFiles();
+    showToast('文件 "' + fileName + '" 上传成功！', 'success');
+  }, 1000);
+}
+
+function renderUploadedFiles() {
+  var el = document.getElementById('uploadedFiles');
+  if (!el) return;
+  if (uploadedFiles.length === 0) { el.innerHTML = ''; return; }
+  var html = '<div style="display:flex;flex-direction:column;gap:8px">';
+  for (var i = 0; i < uploadedFiles.length; i++) {
+    var f = uploadedFiles[i];
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-light);border-radius:var(--radius-sm)">' +
+      '<span style="font-size:18px">' + (f.type==='cert'?'📄':'👥') + '</span>' +
+      '<span style="flex:1;font-size:13px;color:var(--text-dark)">' + f.name + '</span>' +
+      '<span style="font-size:11px;color:var(--text-light)">' + f.uploadedAt + '</span>' +
+      '<span style="color:var(--status-green);font-size:12px">✓ 已上传</span>' +
+      '</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderListingSummary() {
+  var el = document.getElementById('listingSummary');
+  if (!el) return;
+  var orgName = ((document.getElementById('orgName') || {}).value || '').trim();
+  var legalRep = ((document.getElementById('legalRep') || {}).value || '').trim();
+  var district = ((document.getElementById('regDistrict') || {}).value || '').trim();
+  var phone = ((document.getElementById('contactPhone') || {}).value || '').trim();
+  el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+    '<div><span style="font-size:11px;color:var(--text-light)">组织名称</span><div style="font-size:13px;font-weight:500">' + orgName + '</div></div>' +
+    '<div><span style="font-size:11px;color:var(--text-light)">法定代表人</span><div style="font-size:13px;font-weight:500">' + legalRep + '</div></div>' +
+    '<div><span style="font-size:11px;color:var(--text-light)">所属区县</span><div style="font-size:13px;font-weight:500">' + district + '</div></div>' +
+    '<div><span style="font-size:11px;color:var(--text-light)">联系电话</span><div style="font-size:13px;font-weight:500">' + phone + '</div></div>' +
+    '<div style="grid-column:1/-1"><span style="font-size:11px;color:var(--text-light)">已上传文件</span><div style="font-size:13px">' + uploadedFiles.map(function(f){return f.name;}).join('、') + '</div></div>' +
+    '</div>';
+}
+
+async function submitListing() {
+  var declaration = document.getElementById('declaration');
+  if (!declaration || !declaration.checked) {
+    showToast('请先勾选提交声明', 'error');
+    return;
+  }
+  showLoading(true);
+  try {
+    var orgName = ((document.getElementById('orgName') || {}).value || '').trim();
+    var legalRep = ((document.getElementById('legalRep') || {}).value || '').trim();
+    var district = ((document.getElementById('regDistrict') || {}).value || '').trim();
+    var phone = ((document.getElementById('contactPhone') || {}).value || '').trim();
+    var address = ((document.getElementById('orgAddress') || {}).value || '').trim();
+    var members = parseInt((document.getElementById('memberCount') || {}).value) || 0;
+
+    var appRec = {
+      type: 'listing',
+      orgName: orgName,
+      legalRep: legalRep,
+      district: district,
+      contactPhone: phone,
+      address: address,
+      members: members,
+      files: uploadedFiles,
+      status: 'pending',
+      createdAt: new Date(),
+      applicant: currentUser ? currentUser.username : 'unknown',
+    };
+    await db.collection('applications').add(appRec);
+
+    // 添加动态
+    try {
+      await db.collection('news_feed').add({
+        content: '组织 «' + orgName + '» 提交了挂牌申请，等待审核',
+        date: new Date().toLocaleDateString('zh-CN'),
+        createdAt: new Date(),
+      });
+    } catch(e) { console.warn('[Listing] 动态添加失败', e); }
+
+    showToast('挂牌申请提交成功！请等待审核', 'success');
+    uploadedFiles = [];
+    currentListingStep = 1;
+    listingStep(1);
+    setTimeout(function() { navTo(1); }, 1500);
+  } catch(e) {
+    console.error('[Listing] 提交失败：', e);
+    showToast('提交失败：' + (e.message || '未知错误'), 'error');
+  }
+  showLoading(false);
+}
+
+// ===== 审核中心 =====
+function switchReviewTab(type, btn) {
+  var tabs = document.querySelectorAll('.review-tab');
+  for (var i = 0; i < tabs.length; i++) { if (tabs[i]) tabs[i].classList.remove('active'); }
+  if (btn) btn.classList.add('active');
+  var listingPanel = document.getElementById('reviewListingPanel');
+  var financePanel = document.getElementById('reviewFinancePanel');
+  if (listingPanel) listingPanel.style.display = (type === 'listing') ? 'block' : 'none';
+  if (financePanel) financePanel.style.display = (type === 'finance') ? 'block' : 'none';
+  if (type === 'listing') renderReviewList('listing');
+  if (type === 'finance') renderReviewList('finance');
+}
+
+async function renderReviewList(type) {
+  try {
+    var filterType = type === 'listing' ? 'listing' : 'finance';
+    var res = await db.collection('applications').where({ status: 'pending' }).get();
+    var items = res.data || [];
+
+    var listEl = document.getElementById(type === 'listing' ? 'listingReviewList' : 'financeReviewList');
+    var emptyEl = document.getElementById(type === 'listing' ? 'listingReviewEmpty' : 'financeReviewEmpty');
+    var badgeEl = document.getElementById(type === 'listing' ? 'listingPendingCount' : 'financePendingCount');
+
+    if (badgeEl) badgeEl.textContent = items.length;
+    if (emptyEl) emptyEl.style.display = items.length === 0 ? 'block' : 'none';
+    if (listEl) listEl.style.display = items.length === 0 ? 'none' : 'block';
+
+    if (items.length === 0) return;
+
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var app = items[i];
+      html += '<div class="review-card">' +
+        '<div class="review-card-header">' +
+        '<span class="review-card-title">' + (app.orgName || '未知组织') + '</span>' +
+        '<span class="badge badge-orange">待审核</span>' +
+        '</div>' +
+        '<div class="review-card-body">' +
+        '<div class="review-info"><span class="review-label">申请类型</span><span>' + (app.type === 'listing' ? '挂牌申请' : '投融资申请') + '</span></div>' +
+        '<div class="review-info"><span class="review-label">申请人</span><span>' + (app.applicant || '—') + '</span></div>' +
+        '<div class="review-info"><span class="review-label">申请日期</span><span>' + (app.createdAt ? new Date(app.createdAt).toLocaleDateString('zh-CN') : '—') + '</span></div>' +
+        '</div>' +
+        '<div class="review-card-actions">' +
+        '<button class="btn btn-primary btn-sm" onclick="approveApplication(\'' + app._id + '\',\'' + type + '\')">✅ 通过</button>' +
+        '<button class="btn btn-outline btn-sm" style="color:var(--status-red);border-color:var(--status-red)" onclick="rejectApplication(\'' + app._id + '\',\'' + type + '\')">❌ 拒绝</button>' +
+        '</div>' +
+        '</div>';
+    }
+    if (listEl) listEl.innerHTML = html;
+  } catch(e) {
+    console.error('[Review] 加载失败：', e);
+    showToast('审核列表加载失败', 'error');
+  }
+}
+
+async function approveApplication(appId, type) {
+  if (!confirm('确认通过该申请？')) return;
+  showLoading(true);
+  try {
+    await db.collection('applications').doc(appId).update({ status: 'approved', reviewedAt: new Date() });
+    showToast('申请已通过！', 'success');
+    renderReviewList(type);
+    loadPendingCount();
+    loadDashboardData();
+  } catch(e) {
+    console.error('[Review] 审核失败：', e);
+    showToast('操作失败：' + (e.message || '未知错误'), 'error');
+  }
+  showLoading(false);
+}
+
+async function rejectApplication(appId, type) {
+  var reason = prompt('请输入拒绝原因（可选）：');
+  if (reason === null) return;
+  showLoading(true);
+  try {
+    await db.collection('applications').doc(appId).update({ status: 'rejected', reviewReason: reason || '', reviewedAt: new Date() });
+    showToast('申请已拒绝', 'success');
+    renderReviewList(type);
+    loadPendingCount();
+  } catch(e) {
+    console.error('[Review] 拒绝失败：', e);
+    showToast('操作失败：' + (e.message || '未知错误'), 'error');
+  }
+  showLoading(false);
+}
+
+async function loadPendingCount() {
+  if (!currentUser || currentUser.role !== 'reviewer') return;
+  try {
+    var res = await db.collection('applications').where({ status: 'pending' }).count();
+    var count = res.data || res.total || 0;
+    var badge = document.getElementById('pendingBadge');
+    if (badge) {
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'block' : 'none';
+    }
+  } catch(e) {
+    console.error('[Pending] 加载失败：', e);
+  }
+}
+
+// ===== 页面初始化 =====
+async function initApp() {
+  showLoading(true);
+  var cbOk = await initCloudBase();
+  if (!cbOk || !db) {
+    showToast('CloudBase 初始化失败，数据库未连接，请检查网络后刷新页面', 'error');
+    // 即使初始化失败，也显示登录页（但登录时会检测 db 是否可用）
+    var overlay = document.getElementById('loginOverlay');
+    if (overlay) overlay.classList.remove('hidden');
+    showLoading(false);
+    return;
+  }
+  // 检查是否已登录（sessionStorage）
+  var savedUser = sessionStorage.getItem('nja_current_user');
+  if (savedUser) {
+    try {
+      currentUser = JSON.parse(savedUser);
+      onLoginSuccess();
+      showLoading(false);
+      return;
+    } catch(e) {
+      sessionStorage.removeItem('nja_current_user');
+    }
+  }
+  // 显示登录页
+  var overlay = document.getElementById('loginOverlay');
+  if (overlay) overlay.classList.remove('hidden');
+  showLoading(false);
+}
+
+
+// ===== 辅助函数 =====
+function parseWan(s) { return parseFloat((s||'').replace(/,/g,'')) || 0; }
+function parseMu(s) { var m=(s||'').match(/[\d,]+/); return m?parseFloat(m[0].replace(/,/g,'')):0; }
+
+// 从组织详情页发起投融资申请（带入组织上下文）
+function applyFinanceForOrg() {
+  if (currentOrgIdx < 0 || currentOrgIdx >= orgData.length) return;
+  var org = orgData[currentOrgIdx];
+  // 更新投融资申请表中的组织信息
+  navTo(7);
+  setTimeout(function() {
+    var loanCodeBadge = document.getElementById('loanCodeBadge');
+    var loanOrgName = document.getElementById('loanOrgName');
+    var directOrgName = document.getElementById('directOrgName');
+    var codeFormatted = '<span class="njc-tag">NJC</span>' + (org.code || '').replace('NJC-','').replace('-','\u00b7');
+    if (loanCodeBadge) loanCodeBadge.innerHTML = codeFormatted;
+    if (loanOrgName) loanOrgName.textContent = org.name || '—';
+    if (directOrgName) directOrgName.textContent = org.name || '—';
+    // 更新直接融资面板的代码
+    var directCodeBadge = document.querySelector('#invest-direct .code-badge-sm');
+    if (directCodeBadge) directCodeBadge.innerHTML = codeFormatted;
+  }, 100);
+}
+
+// 从投融资服务页选择产品后进入申请（带入产品上下文）
+function selectFinanceProduct(idx) {
+  if (idx < 0 || idx >= FINANCE_PRODUCTS.length) return;
+  selectedFinanceProduct = idx;
+  navTo(7);
+  setTimeout(function() {
+    var productSelect = document.getElementById('loanProduct');
+    if (productSelect) productSelect.value = FINANCE_PRODUCTS[idx].name;
+    initFinanceForm();
+  }, 100);
+}
+
+// ===== 投融资产品列表 =====
+var financeProducts = [
+  { name:'普惠涉农贷', icon:'🏦', rate:'3.45%', maxAmount:'500万元', term:'5年' },
+  { name:'农业供应链金融', icon:'🔗', rate:'4.20%', maxAmount:'300万元', term:'2年' },
+  { name:'集体资产抵押贷', icon:'🏠', rate:'3.85%', maxAmount:'1,000万元', term:'10年' },
+  { name:'乡村振兴专项贷', icon:'🌾', rate:'3.15%', maxAmount:'800万元', term:'3年' }
+];// ===== Screen 5 资产权益详情动态加载 =====
+function loadScreen5() {
+  var d = orgData[lastViewedOrg];
+  if (!d) { navTo(1); return; } // 安全回退
+  var codeFormatted = '<span class="njc-tag">NJC</span>' + (d.code || '').replace('NJC-','').replace('-','\u00b7');
+  document.getElementById('assetCode').innerHTML = codeFormatted;
+  document.getElementById('assetStatus').textContent = transStatus(d.status);
+  document.getElementById('assetStatus').className = 'badge ' + transStatusClass(d.status);
+  // 从 org.assets 数组适配为 screen-5 的 tabular 格式
+  var s5al = adaptAssetsList(d);
+  var s5LandItems = s5al.filter(function(r){return r[1]==='土地'||r[1]==='水面';});
+  var s5LandArea = s5LandItems.reduce(function(s,r){return s+parseMu(r[2]);},0);
+  var s5LandTypes = s5LandItems.map(function(r){return r[1];}).filter(function(v,i,a){return a.indexOf(v)===i;}).join('\u00b7')||'\u2014';
+  var s5BuildItems = s5al.filter(function(r){return r[1]==='建筑';});
+  var s5BuildVal = s5BuildItems.reduce(function(s,r){return s+parseWan(r[3]);},0);
+  var s5BuildCount = s5BuildItems.reduce(function(s,r){var m=(r[2]||'').match(/\d+/);return s+(m?parseInt(m[0]):0);},0);
+  var s5NetAssets = calcTotalAssets(d);
+  var growth = d.growthRate || d.growth || 0;
+  document.getElementById('assetKpiArea').innerHTML =
+    '<div class="kpi-card"><div class="kpi-label">土地面积</div><div class="kpi-value">'+s5LandArea.toLocaleString()+'<span class="kpi-unit">亩</span></div><div class="kpi-sub">'+s5LandTypes+' \u00b7 共 '+s5LandItems.length+' 宗</div></div>'+
+    '<div class="kpi-card gold"><div class="kpi-label">建筑物权益</div><div class="kpi-value">'+s5BuildVal.toLocaleString()+'<span class="kpi-unit">万元</span></div><div class="kpi-sub">集体物业 '+s5BuildCount+' 处</div></div>'+
+    '<div class="kpi-card blue"><div class="kpi-label">成员权益份额</div><div class="kpi-value">'+((d.equityTotal||s5NetAssets||0)/10000).toLocaleString()+'<span class="kpi-unit">万元</span></div><div class="kpi-sub">每股 '+((d.shareCount||0)>0?Math.round((d.equityTotal||s5NetAssets||0)/(d.shareCount||1)):'\u2014')+'元 \u00b7 '+((d.shareCount||0)).toLocaleString()+'股</div></div>'+
+    '<div class="kpi-card purple"><div class="kpi-label">资产总评估值</div><div class="kpi-value">'+formatValue(s5NetAssets)+'</div><div class="kpi-sub">共 '+s5al.length+' 项资产 \u00b7 较上年增长 '+growth+'%</div></div>';
+  var showOps = currentUser && currentUser.role === 'reviewer';
+  document.getElementById('s5AssetOpCol').style.display = showOps ? '' : 'none';
+  document.getElementById('screen5ReadonlyNotice').style.display = showOps ? 'none' : 'flex';
+  document.getElementById('assetDetailTable').querySelector('tbody').innerHTML =
+    s5al.map(function(row,i){return '<tr><td>'+row[0]+'</td><td><span class="tag '+row[5]+'">'+row[1]+'</span></td><td>'+row[2]+'</td><td class="text-right">'+row[3]+'</td><td><span class="tag '+row[5]+'">'+row[4]+'</span></td>'+(showOps?'<td><button class="btn-edit-row" onclick="openAssetEditModal(\'asset\','+i+')">📝</button> <button class="btn-edit-row danger" onclick="deleteAssetRow(\'asset\','+i+')">🗑</button></td>':'')+'</tr>';}).join('');
+}
+
+// ===== 资产/资源权益编辑模态框 =====
+function openAssetEditModal(section, idx) {
+  if (!currentUser || currentUser.role !== 'reviewer') {
+    showToast('\u26a0\ufe0f 资产权益数据由管理员录入，请切换为审核员身份后操作', 'error');
+    return;
+  }
+  var d = orgData[lastViewedOrg];
+  var list = section === 'asset' ? d.assetsList : (d.resourceRights || []);
+  document.getElementById('editAssetResourceType').value = section;
+  document.getElementById('editAssetResourceIndex').value = idx;
+  if (idx >= 0 && idx < list.length) {
+    var item = list[idx];
+    document.getElementById('editAssetResourceTitle').textContent = '\u270f\ufe0f 编辑' + (section==='asset'?'资产':'资源') + '权益';
+    document.getElementById('editARName').value = item[0];
+    document.getElementById('editARType').value = item[1];
+    document.getElementById('editARSize').value = item[2];
+    document.getElementById('editARValue').value = item[3];
+    document.getElementById('editARStatus').value = item[4];
+    document.getElementById('editARTagClass').value = item[5];
+  } else {
+    document.getElementById('editAssetResourceTitle').textContent = '\u2795 新增' + (section==='asset'?'资产':'资源') + '权益';
+    document.getElementById('editARName').value = '';
+    document.getElementById('editARType').value = section==='asset'?'土地':'水资源';
+    document.getElementById('editARSize').value = '';
+    document.getElementById('editARValue').value = '';
+    document.getElementById('editARStatus').value = '已确权';
+    document.getElementById('editARTagClass').value = 'tag-green';
+    document.getElementById('editAssetResourceIndex').value = '-1';
+  }
+  document.getElementById('editAssetResourceModal').classList.add('show');
+}
+function closeAssetEditModal() { document.getElementById('editAssetResourceModal').classList.remove('show'); }
+function saveAssetEdit() {
+  var d = orgData[lastViewedOrg];
+  var section = document.getElementById('editAssetResourceType').value;
+  var idx = parseInt(document.getElementById('editAssetResourceIndex').value);
+  var list = section === 'asset' ? d.assetsList : d.resourceRights;
+  var newItem = [
+    document.getElementById('editARName').value,
+    document.getElementById('editARType').value,
+    document.getElementById('editARSize').value,
+    document.getElementById('editARValue').value,
+    document.getElementById('editARStatus').value,
+    document.getElementById('editARTagClass').value
+  ];
+  if (idx >= 0 && idx < list.length) { list[idx] = newItem; } else { list.push(newItem); }
+  closeAssetEditModal();
+  navToOrgDetail(lastViewedOrg);
+  showToast((section==='asset'?'资产':'资源') + '权益已更新', 'success');
+}
+function deleteAssetRow(section, idx) {
+  if (!currentUser || currentUser.role !== 'reviewer') { showToast('\u26a0\ufe0f 仅管理员可删除权益记录', 'error'); return; }
+  if (!confirm('确定要删除该' + (section==='asset'?'资产':'资源') + '权益记录吗？')) return;
+  var d = orgData[lastViewedOrg];
+  var list = section === 'asset' ? d.assetsList : d.resourceRights;
+  list.splice(idx, 1);
+  navToOrgDetail(lastViewedOrg);
+  showToast('已删除', 'success');
+}
+
+// ===== 投融资面板切换 =====
+function switchInvestTab(type) {
+  document.querySelectorAll('#screen-7 .invest-tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('#screen-7 .invest-panel').forEach(function(p){p.classList.remove('active');});
+  var tabs = document.querySelectorAll('#screen-7 .invest-tab');
+  if (type === 'indirect') { tabs[0].classList.add('active'); document.getElementById('invest-indirect').classList.add('active'); }
+  else { tabs[1].classList.add('active'); document.getElementById('invest-direct').classList.add('active'); }
+}
+
+// ===== 投融资产品关联 =====
+function initFinanceForm() {
+  var bar = document.getElementById('productContextBar');
+  var productSelect = document.getElementById('loanProduct');
+  var amountInput = document.getElementById('loanAmount');
+  var termSelect = document.getElementById('loanTerm');
+  if (!bar || !productSelect) return;
+  // selectedFinanceProduct 可能是数字索引或产品对象
+  var p = null;
+  if (typeof selectedFinanceProduct === 'number' && selectedFinanceProduct >= 0) {
+    p = FINANCE_PRODUCTS[selectedFinanceProduct] || financeProducts[selectedFinanceProduct];
+  } else if (selectedFinanceProduct && selectedFinanceProduct.name) {
+    p = selectedFinanceProduct;
+  }
+  if (p) {
+    bar.style.display = 'flex';
+    var maxAmt = p.max || p.maxAmount || '—';
+    var termStr = p.term || '—';
+    var rate = p.rate || '—';
+    bar.innerHTML = '<div class="pcb-left"><span class="pcb-icon">'+p.icon+'</span><div class="pcb-info"><div class="pcb-name">'+p.name+'</div><div class="pcb-detail">最高 '+maxAmt+' &nbsp;|&nbsp; 期限 '+termStr+' &nbsp;|&nbsp; 利率 '+rate+'</div></div></div><span class="pcb-clear" onclick="clearFinanceProduct()">取消产品关联</span>';
+    productSelect.value = p.name;
+    amountInput.placeholder = '最高 ' + maxAmt;
+    updateFinanceEstimate(p);
+  } else {
+    bar.style.display = 'none';
+    amountInput.placeholder = '请输入金额';
+    termSelect.value = '';
+    updateFinanceEstimate(null);
+  }
+  // 更新组织信息到投融资申请表
+  if (currentUser && currentUser.orgData) {
+    var org = currentUser.orgData;
+    var loanCodeBadge = document.getElementById('loanCodeBadge');
+    var loanOrgName = document.getElementById('loanOrgName');
+    var directOrgName = document.getElementById('directOrgName');
+    var codeFormatted = '<span class="njc-tag">NJC</span>' + (org.code || '').replace('NJC-','').replace('-','\u00b7');
+    if (loanCodeBadge) loanCodeBadge.innerHTML = codeFormatted;
+    if (loanOrgName) loanOrgName.textContent = org.name || currentUser.orgName || '—';
+    if (directOrgName) directOrgName.textContent = org.name || currentUser.orgName || '—';
+  }
+}
+function clearFinanceProduct() {
+  selectedFinanceProduct = null;
+  initFinanceForm();
+  document.getElementById('loanProduct').value = '';
+}
+function updateFinanceEstimate(product) {
+  var items = document.querySelectorAll('#invest-indirect .estimate-item');
+  if (!product) {
+    if (items.length >= 4) {
+      items[0].querySelector('.ei-val').textContent = '3.45%';
+      items[1].querySelector('.ei-val').textContent = '\u2014';
+      items[2].querySelector('.ei-val').textContent = '3-5个工作日';
+      items[3].querySelector('.ei-val').textContent = 'T+2到账';
+    }
+    return;
+  }
+  if (items.length >= 4) {
+    items[0].querySelector('.ei-val').textContent = product.rate;
+    items[1].querySelector('.ei-val').textContent = '详见合同';
+    items[2].querySelector('.ei-val').textContent = '3-5个工作日';
+    items[3].querySelector('.ei-val').textContent = 'T+2到账';
+  }
+}
+function onProductSelect(productName) {
+  if (!productName) {
+    updateFinanceEstimate(null);
+    document.getElementById('loanAmount').placeholder = '请输入金额';
+    document.getElementById('loanTerm').value = '';
+    document.getElementById('productContextBar').style.display = 'none';
+    selectedFinanceProduct = null;
+    return;
+  }
+  var p = financeProducts.find(function(fp){return fp.name === productName;});
+  if (p) {
+    selectedFinanceProduct = p;
+    updateFinanceEstimate(p);
+    document.getElementById('loanAmount').placeholder = '最高 '+p.maxAmount;
+    var termMap = {'普惠涉农贷':'5年','集体资产抵押贷':'10年','乡村振兴专项贷':'3年'};
+    var t = termMap[p.name];
+    if (t) document.getElementById('loanTerm').value = t;
+    var bar = document.getElementById('productContextBar');
+    bar.style.display = 'flex';
+    bar.innerHTML = '<div class="pcb-left"><span class="pcb-icon">'+p.icon+'</span><div class="pcb-info"><div class="pcb-name">'+p.name+'</div><div class="pcb-detail">\U0001f4b0 最高 '+p.maxAmount+' &nbsp;|&nbsp; \U0001f4c5 '+p.term+' &nbsp;|&nbsp; \U0001f4ca '+p.rate+'</div></div></div><span class="pcb-clear" onclick="clearFinanceProduct()">\u2715 取消产品关联</span>';
+  }
+}
+
+// ===== 间接融资提交 =====
+function submitLoan() {
+  var amount = document.getElementById('loanAmount').value;
+  var purpose = document.getElementById('loanPurpose').value;
+  var term = document.getElementById('loanTerm').value;
+  var product = document.getElementById('loanProduct').value;
+  if (!amount) { showToast('请填写申请融资金额', 'error'); return; }
+  if (!purpose) { showToast('请填写资金用途说明', 'error'); return; }
+  if (!term) { showToast('请选择贷款期限', 'error'); return; }
+  if (!product) { showToast('请选择融资产品类型', 'error'); return; }
+  var appData = {
+    id: 'FL' + Date.now(),
+    type: 'finance_indirect',
+    orgName: currentUser ? currentUser.orgName || '未知组织' : '未知组织',
+    amount: amount + '万元',
+    term: term,
+    product: product,
+    purpose: purpose,
+    status: 'pending',
+    submitTime: new Date().toLocaleString('zh-CN')
+  };
+  db.collection('applications').add(appData).then(function(){
+    showToast('信贷融资申请已提交至审核中心！', 'success');
+  }).catch(function(err){
+    showToast('提交失败：' + err.message, 'error');
+  });
+}
+
+// ===== 直接融资提交 =====
+function submitDirect() {
+  var amount = document.getElementById('directAmount').value;
+  var purpose = document.getElementById('directPurpose').value;
+  var directType = document.getElementById('directType').value;
+  if (!amount) { showToast('请填写拟融资金额', 'error'); return; }
+  if (!purpose) { showToast('请填写资金用途说明', 'error'); return; }
+  if (!directType) { showToast('请选择融资方式', 'error'); return; }
+  var appData = {
+    id: 'FD' + Date.now(),
+    type: 'finance_direct',
+    orgName: currentUser ? currentUser.orgName || '未知组织' : '未知组织',
+    amount: amount + '万元',
+    directType: directType,
+    term: document.getElementById('directTerm').value || '\u2014',
+    purpose: purpose,
+    investor: document.getElementById('directInvestor').value || '不限',
+    timeline: document.getElementById('directTimeline').value || '\u2014',
+    status: 'pending',
+    submitTime: new Date().toLocaleString('zh-CN')
+  };
+  db.collection('applications').add(appData).then(function(){
+    showToast('直接融资申请已提交至审核中心！', 'success');
+  }).catch(function(err){
+    showToast('提交失败：' + err.message, 'error');
+  });
+}
+
+// ===== Screen 8 系统说明 - 挂牌代码体系 =====
+function loadCodeSystemTable() {
+  var tbody = document.getElementById('codeSystemTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = orgData.map(function(d){
+    var codeFormatted = (d.code || '').replace('NJC-','NJC').replace('-','\u00b7');
+    return '<tr><td style="font-family:Inter,Segoe UI,system-ui,sans-serif;font-weight:800;font-size:15px;color:var(--green-dark);letter-spacing:1.5px">'+codeFormatted+'</td><td>'+d.name+'</td><td>'+d.district+'</td><td>'+((d.districtCode)||'\u2014')+'</td><td>'+((d.seq)||'\u2014')+'</td><td><span class="badge '+transStatusClass(d.status)+'">'+transStatus(d.status)+'</span></td></tr>';
+  }).join('');
+}
+
+// 启动
+document.addEventListener('DOMContentLoaded', initApp);
+
+</script>
+</body>
+</html>
