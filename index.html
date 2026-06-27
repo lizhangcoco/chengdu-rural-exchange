@@ -1367,17 +1367,17 @@ async function initCloudBase() {
     }
     console.log('[Init] ✅ SDK 匿名登录成功');
 
-    // Step 2: 创建 db wrapper 并测试连通性
+    // Step 2: 创建 db wrapper 并测试连通性（用原生 SDK 测试，避免错误被吞）
     db = createDbWrapper();
     console.log('[Init] Step 2: 测试云数据库...');
     try {
-      var testRes = await db.collection('users_profile').limit(1).get();
-      console.log('[Init] ✅ 云数据库连接正常！测试返回', testRes.data.length, '条');
+      var testRes = await cloudbaseApp.database().collection('users_profile').limit(1).get();
+      console.log('[Init] ✅ 云数据库连接正常！测试返回', testRes.data ? testRes.data.length : 0, '条');
     } catch(testErr) {
       console.error('[Init] ❌ 云数据库不可用:', testErr.message || testErr);
       showLoading(false);
       var errEl = document.getElementById('loginError');
-      if (errEl) { errEl.textContent = '云数据库连接失败，请刷新页面重试'; errEl.classList.add('show'); }
+      if (errEl) { errEl.textContent = '云数据库连接失败：' + (testErr.message || '请刷新页面重试'); errEl.classList.add('show'); }
       return false;
     }
 
@@ -1460,54 +1460,28 @@ async function doLogin() {
   }
   showLoading(true);
   try {
-    // SDK 模式：先用 SDK auth 登录，再查数据库获取用户信息
-    if (authInstance) {
-      try {
-        await authInstance.signInWithPassword({ username: username, password: password });
-        console.log('[Login] ✅ SDK 用户名密码登录成功');
-      } catch(authErr) {
-        console.warn('[Login] SDK auth 登录失败:', authErr.message);
-        // SDK auth 失败但仍可通过数据库查询（匿名登录后已获得访问权限）
-      }
+    // 纯数据库认证：匿名登录后直接查数据库验证用户名和密码
+    // 不调用 signInWithPassword（会破坏匿名登录状态）
+    var rawDb = cloudbaseApp.database();
+    var rawRes = await rawDb.collection('users_profile').where({ username: username, password: password }).limit(1).get();
+    console.log('[Login] 数据库查询返回', rawRes.data ? rawRes.data.length : 0, '条记录');
+    if (!rawRes.data || rawRes.data.length === 0) {
+      if (errEl) { errEl.textContent = '用户名或密码错误'; errEl.classList.add('show'); }
+      showLoading(false);
+      return;
     }
-    // 查数据库获取用户记录
-    var res = await db.collection('users_profile').where({ username: username, password: password }).get();
-    if (res.data.length === 0) {
-      // 尝试只用 username 查询（SDK auth 已验证密码）
-      var res2 = await db.collection('users_profile').where({ username: username }).get();
-      if (res2.data.length > 0) {
-        // SDK auth 已经验证了密码，数据库记录不含密码也能登录
-        var userRec = res2.data[0];
-        currentUser = {
-          _id: userRec._id,
-          username: userRec.username,
-          role: userRec.role || 'org',
-          orgId: userRec.orgId || null,
-          orgCode: userRec.orgCode || null,
-          displayName: userRec.displayName || userRec.username,
-          avatar: userRec.avatar || '农',
-          phone: userRec.phone || '',
-          orgName: userRec.orgName || '',
-        };
-      } else {
-        if (errEl) { errEl.textContent = '用户名或密码错误'; errEl.classList.add('show'); }
-        showLoading(false);
-        return;
-      }
-    } else {
-      var userRec = res.data[0];
-      currentUser = {
-        _id: userRec._id,
-        username: userRec.username,
-        role: userRec.role || 'org',
-        orgId: userRec.orgId || null,
-        orgCode: userRec.orgCode || null,
-        displayName: userRec.displayName || userRec.username,
-        avatar: userRec.avatar || '农',
-        phone: userRec.phone || '',
-        orgName: userRec.orgName || '',
-      };
-    }
+    var userRec = rawRes.data[0];
+    currentUser = {
+      _id: userRec._id,
+      username: userRec.username,
+      role: userRec.role || 'org',
+      orgId: userRec.orgId || null,
+      orgCode: userRec.orgCode || null,
+      displayName: userRec.shortName || userRec.contact || userRec.username,
+      avatar: userRec.avatar || '农',
+      phone: userRec.phone || '',
+      orgName: userRec.orgName || '',
+    };
     if (currentUser.orgCode) {
       try {
         var orgRes = await db.collection('organizations').where({ code: currentUser.orgCode }).get();
