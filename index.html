@@ -409,6 +409,8 @@ body{display:flex;flex-direction:row}
 .readonly-notice strong{font-weight:600}
 
 </style>
+<!-- CloudBase SDK (用于文件直传云存储，绕过HTTP网关1MB限制) -->
+<script src="cloudbase.bundle.js"></script>
 </head>
 <body>
 
@@ -1258,35 +1260,85 @@ body{display:flex;flex-direction:row}
 <script>
 // ========================================
 // 成都农交所 · 生产系统核心逻辑
-// 版本：5.2.0 Production（云函数 API + 云存储文件上传 · 管理员可审阅附件）
+// 版本：5.3.0 Production（SDK直传云存储 · 绕过HTTP payload限制 · 文件上传真实可用）
 // 后端：CloudBase 云函数 dbapi → 云数据库
 // ========================================
 
 const API_URL = 'https://lizhang-cheshi-d3g6chb4t25222375-1344231784.ap-shanghai.app.tcloudbase.com/api';
 
-// ===== 文件上传到云存储 =====
+// ===== CloudBase SDK 实例（用于文件直传云存储） =====
+let cbApp = null;  // SDK 应用实例
+
+// 初始化 CloudBase SDK（匿名登录后才能使用云存储上传）
+async function initCloudBaseSDK() {
+  if (typeof cloudbase === 'undefined') {
+    console.warn('[SDK] cloudbase.bundle.js 未加载，文件上传将不可用');
+    return false;
+  }
+  try {
+    cbApp = cloudbase.init({
+      env: 'lizhang-cheshi-d3g6chb4t25222375'
+    });
+    // 匿名登录（获取 auth 凭证才能上传文件）
+    var auth = cbApp.auth();
+    await auth.signInAnonymously();
+    console.log('[SDK] CloudBase 初始化成功，已匿名登录');
+    return true;
+  } catch(e) {
+    console.error('[SDK] 初始化失败:', e);
+    return false;
+  }
+}
+
+// ===== 文件上传到云存储（SDK 直传，绕过 HTTP 网关限制） =====
 async function uploadFileToCloud(file, uploadPath) {
-  // 将 File 对象转为 base64
-  var reader = new FileReader();
-  return new Promise(function(resolve, reject) {
-    reader.onload = async function() {
-      var base64 = reader.result.split(',')[1]; // 去掉 "data:xxx;base64," 前缀
-      try {
-        var res = await apiCall({
-          action: 'uploadFile',
-          fileBase64: base64,
-          fileName: file.name,
-          mimeType: file.type || 'application/octet-stream',
-          uploadPath: uploadPath || 'listing-files'
-        });
-        resolve(res);
-      } catch(e) {
-        reject(e);
-      }
+  if (!cbApp) {
+    // 尝试初始化 SDK
+    var ready = await initCloudBaseSDK();
+    if (!ready) throw new Error('云存储 SDK 未就绪，请刷新页面重试');
+  }
+
+  // 生成唯一云端路径
+  var timestamp = Date.now();
+  var randomStr = Math.random().toString(36).substring(2, 8);
+  var ext = file.name.split('.').pop().toLowerCase();
+  var cloudPath = (uploadPath || 'listing-files') + '/' + timestamp + '_' + randomStr + '.' + ext;
+
+  try {
+    // 使用 SDK 直接上传到云存储（不经过 HTTP 触发器）
+    var result = await cbApp.uploadFile({
+      cloudPath: cloudPath,
+      filePath: file  // File 对象直接传入
+    });
+
+    var fileID = result.fileID;
+    if (!fileID) throw new Error('上传成功但未返回 fileID');
+
+    console.log('[Upload] 文件上传成功:', fileID);
+
+    // 通过 HTTP API 获取临时下载链接
+    var downloadUrl = '';
+    try {
+      downloadUrl = await getFileDownloadUrl(fileID);
+    } catch(urlErr) {
+      console.warn('[Upload] 获取下载链接失败:', urlErr);
+      // 用 fileID 构造直链备用
+      downloadUrl = '';
+    }
+
+    return {
+      code: 0,
+      fileID: fileID,
+      cloudPath: cloudPath,
+      downloadUrl: downloadUrl,
+      fileName: file.name,
+      size: file.size,
+      mimeType: file.type || 'application/octet-stream'
     };
-    reader.onerror = function() { reject(new Error('文件读取失败')); };
-    reader.readAsDataURL(file);
-  });
+  } catch(e) {
+    console.error('[Upload] 上传失败:', e);
+    throw new Error('文件上传失败：' + (e.message || '未知错误'));
+  }
 }
 
 // 获取文件的临时下载链接
@@ -1717,6 +1769,10 @@ function onLoginSuccess() {
     loadPendingCount();
   }
   loadDashboardData();
+  // 预初始化 CloudBase SDK（用于文件直传云存储）
+  initCloudBaseSDK().then(function(ok) {
+    if (!ok) console.warn('[SDK] 预初始化失败，将在上传时重试');
+  });
   navTo(0);
 }
 
