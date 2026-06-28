@@ -481,9 +481,9 @@ body{display:flex;flex-direction:row}
       还没有账户？<a onclick="showRegForm()">立即注册</a>
     </div>
     <div class="login-hint" id="loginHint">
-      <strong>演示账户</strong><br>
-      审核员：admin / admin123<br>
-      <span style="font-size:11px;color:#AAA">或点击"立即注册"创建新组织账户</span>
+      <strong>系统登录</strong><br>
+      管理员请使用分配的审核账号登录<br>
+      <span style="font-size:11px;color:#AAA">组织用户请点击"立即注册"创建账户</span>
     </div>
   </div>
 </div>
@@ -1245,7 +1245,7 @@ body{display:flex;flex-direction:row}
 <script>
 // ========================================
 // 成都农交所 · 生产系统核心逻辑
-// 版本：4.3.0 Production（云函数 API 模式 + 用户管理）
+// 版本：5.0.0 Production（云函数 API 模式 · 生产级部署 · 全功能就绪）
 // 后端：CloudBase 云函数 dbapi → 云数据库
 // ========================================
 
@@ -1645,7 +1645,7 @@ function onLoginSuccess() {
   var logoutBtn = document.getElementById('logoutBtn');
   if (avatarEl) avatarEl.textContent = (currentUser || {}).avatar || '农';
   if (nameEl) nameEl.textContent = (currentUser || {}).displayName || '';
-  if (roleEl) roleEl.textContent = (currentUser && currentUser.role === 'reviewer') ? '审核员' : ((currentUser || {}).orgName || '');
+  if (roleEl) roleEl.textContent = (currentUser && currentUser.role === 'reviewer') ? '管理员/审核员' : ((currentUser || {}).orgName || '');
   // 显示退出按钮
   if (logoutBtn) logoutBtn.style.display = 'inline-block';
   var reviewerEls = document.querySelectorAll('.reviewer-only');
@@ -1738,22 +1738,11 @@ async function loadDashboardData() {
     if (kpiFinSub) kpiFinSub.textContent = financeApps.length + ' 笔投融资申请';
 
     var factorCount = 0;
-    // 从 orgData 的 factors 字段统计要素数量
-    for (var i = 0; i < orgData.length; i++) {
-      var factors = orgData[i].factors || {};
-      for (var t = 0; t < FACTOR_TYPES.length; t++) {
-        var items = factors[FACTOR_TYPES[t]];
-        if (!items) continue;
-        if (typeof items === 'string' && items) factorCount++;
-        else if (Array.isArray(items)) factorCount += items.length;
-      }
-    }
-    // 远程数据补充
+    // 仅从 factor_items 集合统计要素数量（生产环境不再使用 org.factors 种子数据）
     try {
       var factorRes = await db.collection('factor_items').get();
-      var remoteFactorItems = factorRes.data || [];
-      factorCount += remoteFactorItems.length;
-    } catch(e) { /* 本地数据模式 */ }
+      factorCount = (factorRes.data || []).length;
+    } catch(e) { console.warn('[Dashboard] factor_items 统计失败', e); }
     var kpiFactor = document.getElementById('kpiFactorCount');
     var kpiFactorSub = document.getElementById('kpiFactorSub');
     if (kpiFactor) kpiFactor.innerHTML = factorCount + '<span class="kpi-unit">项</span>';
@@ -1871,7 +1860,6 @@ function renderListingGrid(data) {
       '</div>' +
       '<div class="org-card-footer">' +
       '<span style="font-size:11px;color:var(--text-light)">总资产：' + formatValue(totalAssetsVal) + '</span>' +
-      '<span style="font-size:11px;color:var(--text-light)">要素：' + (Object.keys(org.factors || {}).length) + ' 类</span>' +
       '</div>' +
       '</div>';
   }
@@ -1995,22 +1983,42 @@ function renderDetailAssets(org) {
   tbody.innerHTML = html;
 }
 
-function renderDetailResources(org) {
+async function renderDetailResources(org) {
   var tbody = document.querySelector('#detailResourceTable tbody');
   if (!tbody) return;
-  var factors = org.factors || {};
+  // 从 factor_items 集合加载该组织的要素数据
   var rows = [];
-  var ftypes = ['tech','talent','data','capital'];
-  for (var t = 0; t < ftypes.length; t++) {
-    var items = factors[ftypes[t]];
-    if (!items) continue;
-    if (typeof items === 'string' && items) rows.push([items, transFactorType(ftypes[t]), '—', '—', '已确权']);
-    else if (Array.isArray(items)) {
-      for (var j = 0; j < items.length; j++) {
-        rows.push([items[j], transFactorType(ftypes[t]), '—', '—', '已确权']);
+  try {
+    var orgCode = org.code || '';
+    var orgName = org.name || '';
+    var items = [];
+    if (orgCode) {
+      var res = await db.collection('factor_items').where({ orgCode: orgCode }).limit(50).get();
+      items = res.data || [];
+    }
+    if (items.length === 0 && orgName) {
+      var res2 = await db.collection('factor_items').where({ orgName: orgName }).limit(50).get();
+      var items2 = res2.data || [];
+      // 合并去重
+      for (var k = 0; k < items2.length; k++) {
+        var isDup = false;
+        for (var m = 0; m < items.length; m++) {
+          if (items[m]._id === items2[k]._id) { isDup = true; break; }
+        }
+        if (!isDup) items.push(items2[k]);
       }
     }
-  }
+    for (var i = 0; i < items.length; i++) {
+      var f = items[i];
+      rows.push([
+        f.name || '—',
+        transFactorType(f.type),
+        f.price || '面议',
+        f.provider || '—',
+        f.status === 'available' ? '可用' : (f.status || '已确权')
+      ]);
+    }
+  } catch(e) { console.warn('[Resources] factor_items查询失败:', e); }
   if (rows.length === 0) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:20px">暂无资源权益明细</td></tr>';
     return;
@@ -2023,7 +2031,7 @@ function renderDetailResources(org) {
       '<td>' + r[1] + '</td>' +
       '<td>' + r[2] + '</td>' +
       '<td>' + r[3] + '</td>' +
-      '<td><span class="badge badge-green">' + r[4] + '</span></td>' +
+      '<td><span class="badge ' + (r[4] === '可用' || r[4] === '已确权' ? 'badge-green' : 'badge-orange') + '">' + r[4] + '</span></td>' +
       '</tr>';
   }
   tbody.innerHTML = html;
@@ -2035,12 +2043,9 @@ function renderDetailFinance(org) {
   var orgApps = [];
   for (var i = 0; i < applications.length; i++) {
     var app = applications[i];
-    // 匹配方式：orgId 或 orgName
-    var isMatch = (app.orgId === org._id) || (app.orgName === org.name) ||
-                  (app.orgCode === org.code);
-    var isFinance = app.type === '融资申请' || app.type === '挂牌申请' ||
-                    (app.type && app.type.indexOf('finance') >= 0);
-    if (isMatch) orgApps.push(app);
+    var isMatch = (app.orgName === org.name) || (app.orgCode === org.code);
+    var isFinance = app.type === 'finance' || app.type === 'finance_indirect' || app.type === 'finance_direct';
+    if (isMatch && isFinance) orgApps.push(app);
   }
   if (orgApps.length === 0) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:20px">暂无投融资记录</td></tr>';
@@ -2104,21 +2109,6 @@ async function renderDetailFactor(org) {
     }
   } catch(e) { console.warn('[FactorDetail] factor_items查询失败:', e); }
 
-  // 兼容旧数据：从组织数据的 factors 字段提取
-  var factors = org.factors || {};
-  var ftypes = ['tech','talent','data','capital'];
-  for (var t = 0; t < ftypes.length; t++) {
-    var items = factors[ftypes[t]];
-    if (!items) continue;
-    if (typeof items === 'string' && items) {
-      rows.push({ name: items, type: transFactorType(ftypes[t]), counterparty: '城市供给侧', status: '对接中', date: org.listedAt || '—' });
-    } else if (Array.isArray(items)) {
-      for (var j = 0; j < items.length; j++) {
-        rows.push({ name: items[j], type: transFactorType(ftypes[t]), counterparty: '城市供给侧', status: '对接中', date: org.listedAt || '—' });
-      }
-    }
-  }
-
   if (rows.length === 0) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:20px">暂无要素对接记录</td></tr>';
     return;
@@ -2166,25 +2156,11 @@ function editOrgDetail() {
 
 async function loadFinanceDynamic() {
   try {
-    // 兼容本地数据（type='融资申请'）和远程数据（type='finance'）
-    var remoteData = [];
+    var allFinanceApps = [];
     try {
       var res = await db.collection('applications').where({ type: 'finance' }).orderBy('createdAt', 'desc').limit(20).get();
-      remoteData = res.data || [];
-    } catch(e) { /* 远程查询失败，仅用本地数据 */ }
-    // 合并本地数据中的融资申请
-    var localFinanceApps = applications.filter(function(a) {
-      return a.type === '融资申请' || (a.type && a.type.indexOf('finance') >= 0);
-    });
-    var allFinanceApps = remoteData.slice();
-    // 避免重复
-    for (var i = 0; i < localFinanceApps.length; i++) {
-      var isDup = false;
-      for (var j = 0; j < allFinanceApps.length; j++) {
-        if (allFinanceApps[j]._id === localFinanceApps[i]._id) { isDup = true; break; }
-      }
-      if (!isDup) allFinanceApps.push(localFinanceApps[i]);
-    }
+      allFinanceApps = res.data || [];
+    } catch(e) { console.warn('[Finance] 融资数据查询失败', e); }
     var tbody = document.querySelector('#financeDynamicTable tbody');
     if (!tbody) return;
     if (allFinanceApps.length === 0) {
@@ -2198,7 +2174,7 @@ async function loadFinanceDynamic() {
       var productName = (a.data && a.data.financeProduct) ? a.data.financeProduct : (a.product || a.productName || '—');
       html += '<tr>' +
         '<td>' + (a.orgName || '—') + '</td>' +
-        '<td>' + ((a.orgCode || a.code || a._id) ? '<span class="njc-tag">NJC</span>' + (a.orgCode || a.code || a._id) : '—') + '</td>' +
+        '<td>' + (a.orgCode ? '<span class="njc-tag">NJC</span>' + a.orgCode.replace('NJC-','').replace('-','\u00b7') : '—') + '</td>' +
         '<td>' + amountStr + '</td>' +
         '<td>' + productName + '</td>' +
         '<td><span class="badge ' + transStatusClass(a.status) + '">' + transStatus(a.status) + '</span></td>' +
@@ -2633,7 +2609,8 @@ async function renderReviewList(type) {
           '<div class="review-info"><span class="review-label">融资类型</span><span>' + (app.financeType || (app.type === 'finance_indirect' ? '间接融资（信贷）' : app.type === 'finance_direct' ? '直接融资' : '—')) + '</span></div>' +
           '<div class="review-info"><span class="review-label">融资金额</span><span>' + (app.amount || app.expectedAmount || '—') + '</span></div>' +
           '<div class="review-info"><span class="review-label">融资期限</span><span>' + (app.term ? app.term + ' 个月' : (app.duration ? app.duration + ' 个月' : '—')) + '</span></div>' +
-          '<div class="review-info"><span class="review-label">资金用途</span><span>' + (app.purpose || app.reason || '—') + '</span></div>';
+          '<div class="review-info"><span class="review-label">资金用途</span><span>' + (app.purpose || app.reason || '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">联系方式</span><span>' + (app.contact || app.phone || '—') + '</span></div>';
       } else if (type === 'factor') {
         var factorTypeLabels = { tech: '技术要素', talent: '人才要素', data: '数据要素', capital: '资本要素' };
         detailHtml =
@@ -3194,7 +3171,10 @@ function submitLoan() {
     id: 'FL' + Date.now(),
     type: 'finance',
     financeType: '间接融资（信贷）',
+    orgCode: currentUser ? currentUser.orgCode || '' : '',
     orgName: currentUser ? currentUser.orgName || '未知组织' : '未知组织',
+    applicant: currentUser ? currentUser.username : 'unknown',
+    contact: currentUser ? currentUser.phone || '' : '',
     amount: amount + '万元',
     term: term,
     product: product,
@@ -3222,7 +3202,10 @@ function submitDirect() {
     id: 'FD' + Date.now(),
     type: 'finance',
     financeType: '直接融资',
+    orgCode: currentUser ? currentUser.orgCode || '' : '',
     orgName: currentUser ? currentUser.orgName || '未知组织' : '未知组织',
+    applicant: currentUser ? currentUser.username : 'unknown',
+    contact: currentUser ? currentUser.phone || '' : '',
     amount: amount + '万元',
     directType: directType,
     term: document.getElementById('directTerm').value || '\u2014',
