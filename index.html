@@ -1260,7 +1260,7 @@ body{display:flex;flex-direction:row}
 <script>
 // ========================================
 // 成都农交所 · 生产系统核心逻辑
-// 版本：5.3.0 Production（SDK直传云存储 · 绕过HTTP payload限制 · 文件上传真实可用）
+// 版本：5.4.0 Production（SDK直传云存储+publishableKey · 修复匿名登录初始化）
 // 后端：CloudBase 云函数 dbapi → 云数据库
 // ========================================
 
@@ -1277,7 +1277,9 @@ async function initCloudBaseSDK() {
   }
   try {
     cbApp = cloudbase.init({
-      env: 'lizhang-cheshi-d3g6chb4t25222375'
+      env: 'lizhang-cheshi-d3g6chb4t25222375',
+      region: 'ap-shanghai',
+      publishableKey: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjlkMWRjMzFlLWI0ZDAtNDQ4Yi1hNzZmLWIwY2M2M2Q4MTQ5OCJ9.eyJpc3MiOiJodHRwczovL2xpemhhbmctY2hlc2hpLWQzZzZjaGI0dDI1MjIyMzc1LmFwLXNoYW5naGFpLnRjYi1hcGkudGVuY2VudGNsb3VkYXBpLmNvbSIsInN1YiI6ImFub24iLCJhdWQiOiJsaXpoYW5nLWNoZXNoaS1kM2c2Y2hiNHQyNTIyMjM3NSIsImV4cCI6NDA4NTI5NDIyMywiaWF0IjoxNzgxNjExMDIzLCJub25jZSI6InUyTzUzTldpU1ZPWG8yTEYtYjlxbXciLCJhdF9oYXNoIjoidTJPNTNOV2lTVk9YbzJMRi1iOXFtdyIsIm5hbWUiOiJBbm9ueW1vdXMiLCJzY29wZSI6ImFub255bW91cyIsInByb2plY3RfaWQiOiJsaXpoYW5nLWNoZXNoaS1kM2c2Y2hiNHQyNTIyMjM3NSIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJ1c2VyX3R5cGUiOiIiLCJjbGllbnRfdHlwZSI6ImNsaWVudF91c2VyIiwiaXNfc3lzdGVtX2FkbWluIjpmYWxzZX0.SPVgIke3r9eXV9hcvIx41P8-f718YJCjnMu2mJCXTsXzDi7ijw_wOsbzmHj08vehrb6BTK2DSlepdP7r52izolkPkALgYnzRIqZKUApKbeoeyvjf5zHAeqVDGxndS0f-_JyMsAh4a2rrr8G48hfrJuU1VhiEsgSsTiSWsmMZ5eIJkEXWzaRPSZwpxZX9l3PGoh0YqKCLlm-Lh7hO74neuQ7ci84ULVZMhz9y9NCEP6kXNTeJl7kcwp_56sNj0VTpTDBpCtA2pySc5JBWXenPGqErEGp0OBxD29WwGwENVLwkfC98skqYI3JhmMz0gQL40kHM2Y6iQc92YqBuehmFhg'
     });
     // 匿名登录（获取 auth 凭证才能上传文件）
     var auth = cbApp.auth();
@@ -1285,7 +1287,8 @@ async function initCloudBaseSDK() {
     console.log('[SDK] CloudBase 初始化成功，已匿名登录');
     return true;
   } catch(e) {
-    console.error('[SDK] 初始化失败:', e);
+    console.error('[SDK] 初始化失败:', e.message || e);
+    cbApp = null;
     return false;
   }
 }
