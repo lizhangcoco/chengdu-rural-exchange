@@ -1113,6 +1113,53 @@ body{display:flex;flex-direction:row}
   </div>
 </div>
 
+<!-- 要素对接申请弹窗 -->
+<div class="modal-overlay" id="factorApplyModal" style="display:none">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-header">
+      <h3>📝 要素对接申请</h3>
+      <button class="modal-close" onclick="closeFactorApplyModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-dark);margin-bottom:6px">要素名称 <span style="color:var(--status-red)">*</span></label>
+          <input type="text" id="faName" placeholder="请输入要素项目名称" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-dark);margin-bottom:6px">要素类型</label>
+          <select id="faType" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px">
+            <option value="tech">技术要素</option>
+            <option value="talent">人才要素</option>
+            <option value="data">数据要素</option>
+            <option value="capital">资本要素</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-dark);margin-bottom:6px">供给方（城市方）</label>
+          <input type="text" id="faProvider" placeholder="如：XX科技有限公司" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-dark);margin-bottom:6px">需求组织</label>
+          <input type="text" id="faOrgName" placeholder="如：XX村集体经济组织" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-dark);margin-bottom:6px">联系方式</label>
+          <input type="text" id="faContact" placeholder="联系电话" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-dark);margin-bottom:6px">要素描述</label>
+          <textarea id="faDesc" rows="3" placeholder="请简要描述要素对接需求..." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;resize:vertical"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeFactorApplyModal()">取消</button>
+      <button class="btn btn-primary btn-lg" onclick="submitFactorApplication()">✅ 提交申请</button>
+    </div>
+  </div>
+</div>
+
 <!-- 要素详情弹窗 -->
 <div class="modal-overlay" id="factorDetailModal" style="display:none">
   <div class="modal-box">
@@ -2188,9 +2235,77 @@ function closeFactorDetailModal() {
 }
 
 function addFactorItem(type) {
-  var name = prompt('请输入要素项目名称：');
-  if (!name) return;
-  showToast('添加要素项目功能需管理员权限，已记录添加申请', 'success');
+  var typeMap = { tech: 'tech', talent: 'talent', data: 'data', capital: 'capital' };
+  var modal = document.getElementById('factorApplyModal');
+  if (!modal) return;
+  // 预填要素类型
+  var typeSelect = document.getElementById('faType');
+  if (typeSelect && typeMap[type]) typeSelect.value = typeMap[type];
+  // 清空其他字段
+  var fields = ['faName', 'faProvider', 'faOrgName', 'faContact', 'faDesc'];
+  for (var i = 0; i < fields.length; i++) {
+    var el = document.getElementById(fields[i]);
+    if (el) el.value = '';
+  }
+  // 如果已登录，预填组织名
+  if (currentUser && currentUser.orgName) {
+    var orgEl = document.getElementById('faOrgName');
+    if (orgEl) orgEl.value = currentUser.orgName;
+  }
+  modal.style.display = 'flex';
+}
+
+function closeFactorApplyModal() {
+  var modal = document.getElementById('factorApplyModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function submitFactorApplication() {
+  var name = (document.getElementById('faName') || {}).value || '';
+  var factorType = (document.getElementById('faType') || {}).value || 'tech';
+  var provider = (document.getElementById('faProvider') || {}).value || '';
+  var orgName = (document.getElementById('faOrgName') || {}).value || '';
+  var contact = (document.getElementById('faContact') || {}).value || '';
+  var desc = (document.getElementById('faDesc') || {}).value || '';
+
+  name = name.trim();
+  if (!name) { showToast('请填写要素名称', 'error'); return; }
+
+  var typeLabels = { tech: '技术要素', talent: '人才要素', data: '数据要素', capital: '资本要素' };
+
+  var appData = {
+    type: 'factor',
+    factorName: name,
+    factorType: factorType,
+    factorTypeLabel: typeLabels[factorType] || factorType,
+    provider: provider || '—',
+    orgName: orgName || (currentUser ? currentUser.orgName || '—' : '—'),
+    contact: contact,
+    desc: desc,
+    status: 'pending',
+    createdAt: new Date(),
+    applicant: currentUser ? currentUser.username : 'unknown'
+  };
+
+  showLoading(true);
+  try {
+    await db.collection('applications').add(appData);
+    // 添加动态
+    try {
+      await db.collection('news_feed').add({
+        content: '提交了' + (typeLabels[factorType] || '要素') + '对接申请：' + name + '，等待审核',
+        date: new Date().toLocaleDateString('zh-CN'),
+        createdAt: new Date()
+      });
+    } catch(e) { console.warn('[Factor] 动态添加失败', e); }
+
+    closeFactorApplyModal();
+    showToast('要素对接申请已提交至审核中心！', 'success');
+  } catch(e) {
+    console.error('[Factor] 申请提交失败:', e);
+    showToast('提交失败：' + (e.message || '未知错误'), 'error');
+  }
+  showLoading(false);
 }
 
 // ===== 申请挂牌（多步骤）=====
@@ -2337,9 +2452,24 @@ function switchReviewTab(type, btn) {
 
 async function renderReviewList(type) {
   try {
+    var items = [];
     // 按 type 和 status 同时过滤
-    var res = await db.collection('applications').where({ status: 'pending', type: type }).get();
-    var items = res.data || [];
+    if (type === 'finance') {
+      // 兼容旧的 finance_indirect / finance_direct 类型
+      var res1 = await db.collection('applications').where({ status: 'pending', type: 'finance' }).get();
+      items = res1.data || [];
+      try {
+        var res2 = await db.collection('applications').where({ status: 'pending', type: 'finance_indirect' }).get();
+        items = items.concat(res2.data || []);
+      } catch(e) {}
+      try {
+        var res3 = await db.collection('applications').where({ status: 'pending', type: 'finance_direct' }).get();
+        items = items.concat(res3.data || []);
+      } catch(e) {}
+    } else {
+      var res = await db.collection('applications').where({ status: 'pending', type: type }).get();
+      items = res.data || [];
+    }
 
     var listEl = document.getElementById(type + 'ReviewList');
     var emptyEl = document.getElementById(type + 'ReviewEmpty');
@@ -2366,15 +2496,18 @@ async function renderReviewList(type) {
       } else if (type === 'finance') {
         detailHtml =
           '<div class="review-info"><span class="review-label">组织名称</span><span>' + (app.orgName || '—') + '</span></div>' +
-          '<div class="review-info"><span class="review-label">融资金额</span><span>' + (app.amount || app.expectedAmount || '—') + ' 万元</span></div>' +
-          '<div class="review-info"><span class="review-label">融资期限</span><span>' + (app.duration ? app.duration + ' 个月' : '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">融资类型</span><span>' + (app.financeType || (app.type === 'finance_indirect' ? '间接融资（信贷）' : app.type === 'finance_direct' ? '直接融资' : '—')) + '</span></div>' +
+          '<div class="review-info"><span class="review-label">融资金额</span><span>' + (app.amount || app.expectedAmount || '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">融资期限</span><span>' + (app.term ? app.term + ' 个月' : (app.duration ? app.duration + ' 个月' : '—')) + '</span></div>' +
           '<div class="review-info"><span class="review-label">资金用途</span><span>' + (app.purpose || app.reason || '—') + '</span></div>';
       } else if (type === 'factor') {
+        var factorTypeLabels = { tech: '技术要素', talent: '人才要素', data: '数据要素', capital: '资本要素' };
         detailHtml =
           '<div class="review-info"><span class="review-label">要素名称</span><span>' + (app.factorName || app.name || '—') + '</span></div>' +
-          '<div class="review-info"><span class="review-label">要素类型</span><span>' + (app.factorType || '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">要素类型</span><span>' + (app.factorTypeLabel || factorTypeLabels[app.factorType] || app.factorType || '—') + '</span></div>' +
           '<div class="review-info"><span class="review-label">供给方</span><span>' + (app.provider || '—') + '</span></div>' +
-          '<div class="review-info"><span class="review-label">需求组织</span><span>' + (app.orgName || '—') + '</span></div>';
+          '<div class="review-info"><span class="review-label">需求组织</span><span>' + (app.orgName || '—') + '</span></div>' +
+          '<div class="review-info"><span class="review-label">联系方式</span><span>' + (app.contact || '—') + '</span></div>';
       }
       html += '<div class="review-card">' +
         '<div class="review-card-header">' +
@@ -2409,9 +2542,14 @@ async function approveApplication(appId, type) {
     // 如果是要素对接申请，自动写入 factor_items 集合
     if (type === 'factor') {
       try {
-        // 先获取申请详情
-        var appRes = await db.collection('applications').where({ _id: appId }).get();
+        // 先获取申请详情（用 doc().get() 更可靠）
+        var appRes = await db.collection('applications').doc(appId).get();
         var app = (appRes.data && appRes.data.length > 0) ? appRes.data[0] : null;
+        if (!app) {
+          // fallback: where 查询
+          var fallbackRes = await db.collection('applications').where({ _id: appId }).limit(1).get();
+          app = (fallbackRes.data && fallbackRes.data.length > 0) ? fallbackRes.data[0] : null;
+        }
         if (app) {
           // 映射 factorType → factor_items.type
           var typeMap = { 'technology': 'tech', 'talent': 'talent', 'data': 'data', 'capital': 'capital', 'tech': 'tech' };
@@ -2428,7 +2566,9 @@ async function approveApplication(appId, type) {
             status: 'available',
             createdAt: new Date()
           });
-          console.log('[Review] 要素已写入 factor_items');
+          console.log('[Review] 要素已写入 factor_items:', app.factorName);
+        } else {
+          console.warn('[Review] 未找到申请记录:', appId);
         }
       } catch(e) { console.warn('[Review] factor_items写入失败:', e); }
     }
@@ -2465,8 +2605,23 @@ async function loadPendingCount() {
   try {
     var types = ['listing', 'finance', 'factor'];
     for (var i = 0; i < types.length; i++) {
-      var res = await db.collection('applications').where({ status: 'pending', type: types[i] }).count();
-      var count = res.data || res.total || 0;
+      var count = 0;
+      if (types[i] === 'finance') {
+        // 兼容旧的 finance_indirect / finance_direct
+        var r1 = await db.collection('applications').where({ status: 'pending', type: 'finance' }).count();
+        count = r1.data || r1.total || 0;
+        try {
+          var r2 = await db.collection('applications').where({ status: 'pending', type: 'finance_indirect' }).count();
+          count += (r2.data || r2.total || 0);
+        } catch(e) {}
+        try {
+          var r3 = await db.collection('applications').where({ status: 'pending', type: 'finance_direct' }).count();
+          count += (r3.data || r3.total || 0);
+        } catch(e) {}
+      } else {
+        var res = await db.collection('applications').where({ status: 'pending', type: types[i] }).count();
+        count = res.data || res.total || 0;
+      }
       var badge = document.getElementById(types[i] + 'PendingCount');
       if (badge) {
         badge.textContent = count;
@@ -2757,13 +2912,15 @@ function submitLoan() {
   if (!product) { showToast('请选择融资产品类型', 'error'); return; }
   var appData = {
     id: 'FL' + Date.now(),
-    type: 'finance_indirect',
+    type: 'finance',
+    financeType: '间接融资（信贷）',
     orgName: currentUser ? currentUser.orgName || '未知组织' : '未知组织',
     amount: amount + '万元',
     term: term,
     product: product,
     purpose: purpose,
     status: 'pending',
+    createdAt: new Date(),
     submitTime: new Date().toLocaleString('zh-CN')
   };
   db.collection('applications').add(appData).then(function(){
@@ -2783,7 +2940,8 @@ function submitDirect() {
   if (!directType) { showToast('请选择融资方式', 'error'); return; }
   var appData = {
     id: 'FD' + Date.now(),
-    type: 'finance_direct',
+    type: 'finance',
+    financeType: '直接融资',
     orgName: currentUser ? currentUser.orgName || '未知组织' : '未知组织',
     amount: amount + '万元',
     directType: directType,
@@ -2792,6 +2950,7 @@ function submitDirect() {
     investor: document.getElementById('directInvestor').value || '不限',
     timeline: document.getElementById('directTimeline').value || '\u2014',
     status: 'pending',
+    createdAt: new Date(),
     submitTime: new Date().toLocaleString('zh-CN')
   };
   db.collection('applications').add(appData).then(function(){
