@@ -85,6 +85,12 @@ body{display:flex;flex-direction:row}
 }
 .sidebar-footer .user-name{color:#FFFFFF;font-size:12px}
 .sidebar-footer .user-role{color:rgba(255,255,255,0.4);font-size:10px}
+.sidebar-footer .logout-btn{
+  margin-left:auto;padding:4px 10px;border-radius:6px;border:none;cursor:pointer;
+  background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);font-size:11px;
+  transition:all 0.2s;
+}
+.sidebar-footer .logout-btn:hover{background:rgba(255,255,255,0.25);color:#FFFFFF}
 
 /* ===== Main Content ===== */
 .main-content{
@@ -515,6 +521,9 @@ body{display:flex;flex-direction:row}
       <span class="nav-icon">✅</span><span class="nav-label">审核中心</span>
       <span class="pending-count" id="pendingBadge" style="display:none;margin-left:auto;background:#DC2626;color:#FFF;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700">0</span>
     </button>
+    <button class="nav-item reviewer-only" data-screen="10" onclick="navTo(10)" style="display:none">
+      <span class="nav-icon">👥</span><span class="nav-label">用户管理</span>
+    </button>
     <div class="nav-section">其他</div>
     <button class="nav-item" data-screen="8" onclick="navTo(8)">
       <span class="nav-icon">ℹ️</span><span class="nav-label">系统说明</span>
@@ -527,6 +536,7 @@ body{display:flex;flex-direction:row}
         <div class="user-name" id="userName">未登录</div>
         <div class="user-role" id="userRole">—</div>
       </div>
+      <button class="logout-btn" id="logoutBtn" onclick="logout()" title="退出登录" style="display:none">退出</button>
     </div>
   </div>
 </aside>
@@ -1080,6 +1090,61 @@ body{display:flex;flex-direction:row}
   </div>
 </section>
 
+<!-- ========== SCREEN 10: 用户管理（管理员专用） ========== -->
+<section class="screen" id="screen-10">
+  <div class="page-header">
+    <div>
+      <div class="page-breadcrumb"><span onclick="navTo(0)">首页</span> / 用户管理</div>
+      <div class="page-title">用户管理</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="badge badge-blue">管理员模式</span>
+      <span style="font-size:12px;color:var(--text-light)" id="userManagerCount">0 个注册用户</span>
+    </div>
+  </div>
+  <!-- 搜索 & 过滤 -->
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input type="text" id="userSearchInput" placeholder="搜索用户名/组织名..." style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border-light);border-radius:8px;font-size:13px" onkeyup="filterUserList()">
+      <select id="userStatusFilter" style="padding:8px 12px;border:1px solid var(--border-light);border-radius:8px;font-size:13px;min-width:100px" onchange="filterUserList()">
+        <option value="">全部状态</option>
+        <option value="active">已启用</option>
+        <option value="pending">待审核</option>
+        <option value="disabled">已禁用</option>
+      </select>
+      <select id="userRoleFilter" style="padding:8px 12px;border:1px solid var(--border-light);border-radius:8px;font-size:13px;min-width:100px" onchange="filterUserList()">
+        <option value="">全部角色</option>
+        <option value="org">组织账号</option>
+        <option value="reviewer">管理员</option>
+      </select>
+    </div>
+  </div>
+  <!-- 用户列表 -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">注册用户列表</span></div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px" id="userManageTable">
+        <thead>
+          <tr style="background:var(--bg-light);border-bottom:2px solid var(--border-light)">
+            <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text-gray)">用户名</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text-gray)">角色</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text-gray)">组织全称</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text-gray)">简称</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text-gray)">联系人</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text-gray)">区县</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text-gray)">状态</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:600;color:var(--text-gray)">注册时间</th>
+            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--text-gray)">操作</th>
+          </tr>
+        </thead>
+        <tbody id="userManageTbody">
+          <tr><td colspan="9" style="text-align:center;color:var(--text-light);padding:40px">加载中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
 </main>
 
 
@@ -1180,7 +1245,7 @@ body{display:flex;flex-direction:row}
 <script>
 // ========================================
 // 成都农交所 · 生产系统核心逻辑
-// 版本：4.0.0 Production（云函数 API 模式）
+// 版本：4.3.0 Production（云函数 API 模式 + 用户管理）
 // 后端：CloudBase 云函数 dbapi → 云数据库
 // ========================================
 
@@ -1471,6 +1536,19 @@ async function doLogin() {
       return;
     }
     var userRec = res.data[0];
+    // 检查账号状态（管理员不受限制）
+    if (userRec.role !== 'reviewer') {
+      if (userRec.status === 'pending') {
+        if (errEl) { errEl.textContent = '账号待审核，请等待管理员通过后登录'; errEl.classList.add('show'); }
+        showLoading(false);
+        return;
+      }
+      if (userRec.status === 'disabled') {
+        if (errEl) { errEl.textContent = '账号已被禁用，请联系管理员'; errEl.classList.add('show'); }
+        showLoading(false);
+        return;
+      }
+    }
     currentUser = {
       _id: userRec._id,
       username: userRec.username,
@@ -1564,9 +1642,12 @@ function onLoginSuccess() {
   var avatarEl = document.getElementById('userAvatar');
   var nameEl = document.getElementById('userName');
   var roleEl = document.getElementById('userRole');
+  var logoutBtn = document.getElementById('logoutBtn');
   if (avatarEl) avatarEl.textContent = (currentUser || {}).avatar || '农';
   if (nameEl) nameEl.textContent = (currentUser || {}).displayName || '';
   if (roleEl) roleEl.textContent = (currentUser && currentUser.role === 'reviewer') ? '审核员' : ((currentUser || {}).orgName || '');
+  // 显示退出按钮
+  if (logoutBtn) logoutBtn.style.display = 'inline-block';
   var reviewerEls = document.querySelectorAll('.reviewer-only');
   for (var i = 0; i < reviewerEls.length; i++) { reviewerEls[i].style.display = 'none'; }
   if (currentUser && currentUser.role === 'reviewer') {
@@ -1580,6 +1661,20 @@ function onLoginSuccess() {
 function logout() {
   currentUser = null;
   sessionStorage.removeItem('nja_current_user');
+  // 重置用户信息显示
+  var avatarEl = document.getElementById('userAvatar');
+  var nameEl = document.getElementById('userName');
+  var roleEl = document.getElementById('userRole');
+  if (avatarEl) avatarEl.textContent = '农';
+  if (nameEl) nameEl.textContent = '未登录';
+  if (roleEl) roleEl.textContent = '—';
+  // 隐藏管理员专属元素
+  var reviewerEls = document.querySelectorAll('.reviewer-only');
+  for (var i = 0; i < reviewerEls.length; i++) { reviewerEls[i].style.display = 'none'; }
+  // 隐藏退出按钮（未登录时不需要）
+  var logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) logoutBtn.style.display = 'none';
+  // 显示登录界面
   var overlay = document.getElementById('loginOverlay');
   if (overlay) overlay.classList.remove('hidden');
   var userEl = document.getElementById('loginUsername');
@@ -1588,8 +1683,9 @@ function logout() {
   if (passEl) passEl.value = '';
   var errEl = document.getElementById('loginError');
   if (errEl) errEl.classList.remove('show');
-  var reviewerEls = document.querySelectorAll('.reviewer-only');
-  for (var i = 0; i < reviewerEls.length; i++) { reviewerEls[i].style.display = 'none'; }
+  // 回到登录表单页
+  showLoginForm();
+  showToast('已退出登录', 'success');
 }
 
 // ===== 导航 =====
@@ -1610,6 +1706,7 @@ function navTo(screenIdx) {
   if (screenIdx === 7) initFinanceForm();
   if (screenIdx === 8) loadCodeSystemTable();
   if (screenIdx === 9) { if (currentUser && currentUser.role === 'reviewer') renderReviewList('listing'); }
+  if (screenIdx === 10) { if (currentUser && currentUser.role === 'reviewer') loadUserManageData(); }
 }
 
 // ===== 仪表盘 =====
@@ -2681,6 +2778,146 @@ async function loadPendingCount() {
     }
   } catch(e) {
     console.error('[Pending] 加载失败：', e);
+  }
+}
+
+// ===== 用户管理（管理员专用） =====
+var allUserListData = [];
+
+async function loadUserManageData() {
+  if (!currentUser || currentUser.role !== 'reviewer') return;
+  try {
+    var res = await db.collection('users_profile').limit(100).get();
+    allUserListData = res.data || [];
+    renderUserManageTable(allUserListData);
+    var countEl = document.getElementById('userManagerCount');
+    if (countEl) countEl.textContent = allUserListData.length + ' 个注册用户';
+  } catch(e) {
+    console.error('[UserManage] 加载失败:', e);
+    showToast('加载用户列表失败', 'error');
+  }
+}
+
+function renderUserManageTable(users) {
+  var tbody = document.getElementById('userManageTbody');
+  if (!tbody) return;
+  if (users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-light);padding:40px">暂无注册用户</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < users.length; i++) {
+    var u = users[i];
+    var statusBadge = '';
+    if (u.status === 'active') {
+      statusBadge = '<span class="badge badge-green">已启用</span>';
+    } else if (u.status === 'pending') {
+      statusBadge = '<span class="badge badge-orange">待审核</span>';
+    } else if (u.status === 'disabled') {
+      statusBadge = '<span class="badge" style="background:#FEE2E2;color:#DC2626">已禁用</span>';
+    } else {
+      statusBadge = '<span class="badge" style="background:var(--bg-light);color:var(--text-gray)">未设置</span>';
+    }
+    var roleLabel = u.role === 'reviewer' ? '<span style="color:#1B5E20;font-weight:600">管理员</span>' : '组织账号';
+    var dateStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString('zh-CN') : '—';
+    var isSelf = currentUser && currentUser._id === u._id;
+    var opsHtml = '';
+    if (isSelf) {
+      opsHtml = '<span style="color:var(--text-light);font-size:11px">当前账号</span>';
+    } else {
+      // 启用/禁用按钮
+      if (u.status === 'pending') {
+        opsHtml += '<button class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 8px;margin:0 4px" onclick="approveUser(\'' + u._id + '\')">通过</button>';
+        opsHtml += '<button class="btn btn-sm" style="font-size:11px;padding:3px 8px;background:#FEE2E2;color:#DC2626;border:none;margin:0 4px" onclick="disableUser(\'' + u._id + '\')">拒绝</button>';
+      } else if (u.status === 'active') {
+        opsHtml += '<button class="btn btn-sm" style="font-size:11px;padding:3px 8px;background:#FEE2E2;color:#DC2626;border:none;margin:0 4px" onclick="disableUser(\'' + u._id + '\')">禁用</button>';
+      } else if (u.status === 'disabled') {
+        opsHtml += '<button class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 8px;margin:0 4px" onclick="enableUser(\'' + u._id + '\')">启用</button>';
+      }
+      // 重置密码按钮
+      opsHtml += '<button class="btn btn-sm" style="font-size:11px;padding:3px 8px;background:var(--bg-light);color:var(--text-gray);border:1px solid var(--border-light);margin:0 4px" onclick="resetUserPassword(\'' + u._id + '\',\'' + (u.username || '').replace(/'/g, "\\'") + '\')">重置密码</button>';
+    }
+    html += '<tr style="border-bottom:1px solid var(--border-light);' + (isSelf ? 'background:#F0FFF4;' : '') + '">' +
+      '<td style="padding:10px 12px;font-weight:500">' + (u.username || '—') + '</td>' +
+      '<td style="padding:10px 12px">' + roleLabel + '</td>' +
+      '<td style="padding:10px 12px">' + (u.orgName || '—') + '</td>' +
+      '<td style="padding:10px 12px">' + (u.shortName || '—') + '</td>' +
+      '<td style="padding:10px 12px">' + (u.contact || '—') + '</td>' +
+      '<td style="padding:10px 12px">' + (u.district || '—') + '</td>' +
+      '<td style="padding:10px 12px">' + statusBadge + '</td>' +
+      '<td style="padding:10px 12px;color:var(--text-light);font-size:12px">' + dateStr + '</td>' +
+      '<td style="padding:10px 12px;text-align:center">' + opsHtml + '</td>' +
+      '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function filterUserList() {
+  var keyword = (document.getElementById('userSearchInput') || {}).value || '';
+  keyword = keyword.trim().toLowerCase();
+  var statusFilter = (document.getElementById('userStatusFilter') || {}).value || '';
+  var roleFilter = (document.getElementById('userRoleFilter') || {}).value || '';
+  var filtered = [];
+  for (var i = 0; i < allUserListData.length; i++) {
+    var u = allUserListData[i];
+    if (keyword && !((u.username || '').toLowerCase().indexOf(keyword) >= 0 || (u.orgName || '').toLowerCase().indexOf(keyword) >= 0)) continue;
+    if (statusFilter && u.status !== statusFilter) continue;
+    if (roleFilter && u.role !== roleFilter) continue;
+    filtered.push(u);
+  }
+  renderUserManageTable(filtered);
+}
+
+async function approveUser(userId) {
+  if (!currentUser || currentUser.role !== 'reviewer') { showToast('仅管理员可操作', 'error'); return; }
+  try {
+    await db.collection('users_profile').doc(userId).update({ status: 'active' });
+    showToast('用户已审核通过，可以正常登录', 'success');
+    loadUserManageData();
+  } catch(e) {
+    console.error('[UserManage] 审核通过失败:', e);
+    showToast('操作失败：' + (e.message || ''), 'error');
+  }
+}
+
+async function disableUser(userId) {
+  if (!currentUser || currentUser.role !== 'reviewer') { showToast('仅管理员可操作', 'error'); return; }
+  try {
+    await db.collection('users_profile').doc(userId).update({ status: 'disabled' });
+    showToast('用户已禁用', 'success');
+    loadUserManageData();
+  } catch(e) {
+    console.error('[UserManage] 禁用失败:', e);
+    showToast('操作失败：' + (e.message || ''), 'error');
+  }
+}
+
+async function enableUser(userId) {
+  if (!currentUser || currentUser.role !== 'reviewer') { showToast('仅管理员可操作', 'error'); return; }
+  try {
+    await db.collection('users_profile').doc(userId).update({ status: 'active' });
+    showToast('用户已重新启用', 'success');
+    loadUserManageData();
+  } catch(e) {
+    console.error('[UserManage] 启用失败:', e);
+    showToast('操作失败：' + (e.message || ''), 'error');
+  }
+}
+
+async function resetUserPassword(userId, username) {
+  if (!currentUser || currentUser.role !== 'reviewer') { showToast('仅管理员可操作', 'error'); return; }
+  var newPwd = prompt('请输入为用户「' + (username || userId) + '」设置的新密码（至少4位）：');
+  if (!newPwd || newPwd.length < 4) {
+    if (newPwd !== null) showToast('密码至少需要4位', 'error');
+    return;
+  }
+  try {
+    await db.collection('users_profile').doc(userId).update({ password: newPwd });
+    showToast('密码已重置为：' + newPwd, 'success');
+    loadUserManageData();
+  } catch(e) {
+    console.error('[UserManage] 重置密码失败:', e);
+    showToast('操作失败：' + (e.message || ''), 'error');
   }
 }
 
