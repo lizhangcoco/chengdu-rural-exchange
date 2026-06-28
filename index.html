@@ -1969,12 +1969,46 @@ function renderDetailFinance(org) {
   tbody.innerHTML = html;
 }
 
-function renderDetailFactor(org) {
+async function renderDetailFactor(org) {
   var tbody = document.querySelector('#detailFactorTable tbody');
   if (!tbody) return;
-  // 从组织数据的 factors 字段提取要素对接信息
-  var factors = org.factors || {};
+
+  // 优先从 factor_items 集合加载该组织的要素对接数据
   var rows = [];
+  try {
+    var orgCode = org.code || '';
+    var orgName = org.name || '';
+    var allItems = [];
+    // 按 orgCode 查询
+    if (orgCode) {
+      var res1 = await db.collection('factor_items').where({ orgCode: orgCode }).limit(50).get();
+      allItems = allItems.concat(res1.data || []);
+    }
+    // 按 orgName 查询（兼容 orgCode 为空的情况）
+    if (orgName) {
+      var res2 = await db.collection('factor_items').where({ orgName: orgName }).limit(50).get();
+      var nameItems = res2.data || [];
+      // 合并，避免重复（按 _id 去重）
+      var existIds = [];
+      for (var k = 0; k < allItems.length; k++) { existIds.push(allItems[k]._id); }
+      for (var k = 0; k < nameItems.length; k++) {
+        if (existIds.indexOf(nameItems[k]._id) < 0) { allItems.push(nameItems[k]); }
+      }
+    }
+    for (var i = 0; i < allItems.length; i++) {
+      var f = allItems[i];
+      rows.push({
+        name: f.name || '—',
+        type: transFactorType(f.type),
+        counterparty: f.provider || '城市供给侧',
+        status: f.status === 'available' ? '可用' : (f.status || '对接中'),
+        date: f.createdAt ? new Date(f.createdAt).toLocaleDateString('zh-CN') : '—'
+      });
+    }
+  } catch(e) { console.warn('[FactorDetail] factor_items查询失败:', e); }
+
+  // 兼容旧数据：从组织数据的 factors 字段提取
+  var factors = org.factors || {};
   var ftypes = ['tech','talent','data','capital'];
   for (var t = 0; t < ftypes.length; t++) {
     var items = factors[ftypes[t]];
@@ -1987,6 +2021,7 @@ function renderDetailFactor(org) {
       }
     }
   }
+
   if (rows.length === 0) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:20px">暂无要素对接记录</td></tr>';
     return;
@@ -1994,11 +2029,12 @@ function renderDetailFactor(org) {
   var html = '';
   for (var i = 0; i < rows.length; i++) {
     var f = rows[i];
+    var statusBadge = (f.status === '已完成' || f.status === '可用') ? 'badge-green' : 'badge-orange';
     html += '<tr>' +
       '<td>' + f.name + '</td>' +
       '<td>' + f.type + '</td>' +
       '<td>' + f.counterparty + '</td>' +
-      '<td><span class="badge badge-orange">' + f.status + '</span></td>' +
+      '<td><span class="badge ' + statusBadge + '">' + f.status + '</span></td>' +
       '<td>' + f.date + '</td>' +
       '</tr>';
   }
@@ -2279,6 +2315,7 @@ async function submitFactorApplication() {
     factorType: factorType,
     factorTypeLabel: typeLabels[factorType] || factorType,
     provider: provider || '—',
+    orgCode: currentUser ? currentUser.orgCode || '' : '',
     orgName: orgName || (currentUser ? currentUser.orgName || '—' : '—'),
     contact: contact,
     desc: desc,
@@ -2554,9 +2591,11 @@ async function approveApplication(appId, type) {
           // 映射 factorType → factor_items.type
           var typeMap = { 'technology': 'tech', 'talent': 'talent', 'data': 'data', 'capital': 'capital', 'tech': 'tech' };
           var itemType = typeMap[app.factorType] || app.factorType || 'tech';
+          var typeLabels = { tech: '技术要素', talent: '人才要素', data: '数据要素', capital: '资本要素' };
           await db.collection('factor_items').add({
             name: app.factorName || app.name || '—',
             type: itemType,
+            factorTypeLabel: app.factorTypeLabel || typeLabels[itemType] || itemType,
             provider: app.provider || '—',
             orgCode: app.orgCode || '',
             orgName: app.orgName || '',
@@ -2566,17 +2605,21 @@ async function approveApplication(appId, type) {
             status: 'available',
             createdAt: new Date()
           });
-          console.log('[Review] 要素已写入 factor_items:', app.factorName);
+          console.log('[Review] 要素已写入 factor_items:', app.factorName || app.name);
         } else {
           console.warn('[Review] 未找到申请记录:', appId);
         }
-      } catch(e) { console.warn('[Review] factor_items写入失败:', e); }
+      } catch(e) { console.warn('[Review] factor_items写入失败:', e); showToast('要素数据写入失败，请手动添加：' + (e.message || '未知错误'), 'error'); }
     }
 
     showToast('申请已通过！', 'success');
     renderReviewList(type);
     loadPendingCount();
     loadDashboardData();
+    // 如果是要素对接审批，刷新要素市场数据
+    if (type === 'factor') {
+      try { loadFactorCounts(); } catch(e) {}
+    }
   } catch(e) {
     console.error('[Review] 审核失败：', e);
     showToast('操作失败：' + (e.message || '未知错误'), 'error');
