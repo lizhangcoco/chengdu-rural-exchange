@@ -1258,11 +1258,59 @@ body{display:flex;flex-direction:row}
 <script>
 // ========================================
 // 成都农交所 · 生产系统核心逻辑
-// 版本：5.0.0 Production（云函数 API 模式 · 生产级部署 · 全功能就绪）
+// 版本：5.2.0 Production（云函数 API + 云存储文件上传 · 管理员可审阅附件）
 // 后端：CloudBase 云函数 dbapi → 云数据库
 // ========================================
 
 const API_URL = 'https://lizhang-cheshi-d3g6chb4t25222375-1344231784.ap-shanghai.app.tcloudbase.com/api';
+
+// ===== 文件上传到云存储 =====
+async function uploadFileToCloud(file, uploadPath) {
+  // 将 File 对象转为 base64
+  var reader = new FileReader();
+  return new Promise(function(resolve, reject) {
+    reader.onload = async function() {
+      var base64 = reader.result.split(',')[1]; // 去掉 "data:xxx;base64," 前缀
+      try {
+        var res = await apiCall({
+          action: 'uploadFile',
+          fileBase64: base64,
+          fileName: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          uploadPath: uploadPath || 'listing-files'
+        });
+        resolve(res);
+      } catch(e) {
+        reject(e);
+      }
+    };
+    reader.onerror = function() { reject(new Error('文件读取失败')); };
+    reader.readAsDataURL(file);
+  });
+}
+
+// 获取文件的临时下载链接
+async function getFileDownloadUrl(fileID, maxAge) {
+  var res = await apiCall({
+    action: 'getFileUrl',
+    fileID: fileID,
+    maxAge: maxAge || 86400
+  });
+  if (res.fileList && res.fileList.length > 0) {
+    return res.fileList[0].downloadUrl || '';
+  }
+  return '';
+}
+
+// 批量获取文件下载链接
+async function getFileDownloadUrls(fileIDs, maxAge) {
+  var res = await apiCall({
+    action: 'getFileUrls',
+    fileIDs: fileIDs,
+    maxAge: maxAge || 86400
+  });
+  return res.fileList || [];
+}
 
 // ===== 全局状态 =====
 let currentUser = null;
@@ -1271,7 +1319,8 @@ let applications = [];
 let newsFeed = [];
 let db = null;
 let currentOrgIdx = -1;
-let uploadedFiles = [];
+let uploadedFiles = []; // { type, name, size, fileID, downloadUrl }
+let isUploading = false;
 let selectedFinanceProduct = null;
 let currentListingStep = 1;
 
@@ -2441,13 +2490,14 @@ function listingStep(step) {
   }
   // 验证步骤 2 -> 3
   if (step === 3) {
-    // 检查是否真正选择了文件（文件输入框必须有值）
-    var certInput = document.getElementById('fileInputCert');
-    var membersInput = document.getElementById('fileInputMembers');
-    var hasCertFile = certInput && certInput.files && certInput.files.length > 0;
-    var hasMembersFile = membersInput && membersInput.files && membersInput.files.length > 0;
-    if (!hasCertFile && !hasMembersFile) {
-      showToast('请至少选择并上传一份证明材料文件', 'error');
+    // 检查文件是否已上传到云端
+    if (uploadedFiles.length === 0) {
+      showToast('请至少上传一份证明材料文件', 'error');
+      return;
+    }
+    var hasUploaded = uploadedFiles.some(function(f) { return f.fileID; });
+    if (!hasUploaded) {
+      showToast('文件尚未上传成功，请等待上传完成', 'error');
       return;
     }
     renderListingSummary();
@@ -2478,7 +2528,7 @@ function triggerFileUpload(type) {
   if (input) input.click();
 }
 
-function handleFileUpload(input, type) {
+async function handleFileUpload(input, type) {
   var file = input.files && input.files[0];
   if (!file) { showToast('请选择一个文件', 'error'); return; }
   // 文件大小校验 ≤10MB
@@ -2495,13 +2545,31 @@ function handleFileUpload(input, type) {
     input.value = '';
     return;
   }
-  // 移除同类型的旧文件（如果已有）
-  uploadedFiles = uploadedFiles.filter(function(f) { return f.type !== type; });
-  uploadedFiles.push({ type: type, name: file.name, size: file.size, uploadedAt: new Date().toLocaleString('zh-CN') });
-  renderUploadedFiles();
-  // 更新上传区域样式
-  updateUploadZoneStyle(type, file.name);
-  showToast('文件 "' + file.name + '" 已选择，请继续下一步', 'success');
+  // 上传到云存储
+  showToast('正在上传 "' + file.name + '"...', 'success');
+  updateUploadZoneStyle(type, file.name, true); // 显示上传中状态
+  try {
+    var uploadRes = await uploadFileToCloud(file, 'listing-files');
+    // 移除同类型的旧文件
+    uploadedFiles = uploadedFiles.filter(function(f) { return f.type !== type; });
+    uploadedFiles.push({
+      type: type,
+      name: file.name,
+      size: file.size,
+      fileID: uploadRes.fileID || '',
+      downloadUrl: uploadRes.downloadUrl || '',
+      mimeType: file.type || 'application/octet-stream',
+      uploadedAt: new Date().toLocaleString('zh-CN')
+    });
+    renderUploadedFiles();
+    updateUploadZoneStyle(type, file.name, false);
+    showToast('文件 "' + file.name + '" 上传成功！', 'success');
+  } catch(e) {
+    console.error('[Upload] 上传失败:', e);
+    showToast('文件上传失败：' + (e.message || '网络错误，请重试'), 'error');
+    input.value = '';
+    updateUploadZoneStyle(type, null, false);
+  }
 }
 
 function removeUpload(type, evt) {
@@ -2519,19 +2587,24 @@ function removeUpload(type, evt) {
   showToast('已移除文件', 'success');
 }
 
-function updateUploadZoneStyle(type, fileName) {
+function updateUploadZoneStyle(type, fileName, isUploadingNow) {
   var zoneId = type === 'cert' ? 'uploadZoneCert' : 'uploadZoneMembers';
   var zone = document.getElementById(zoneId);
   if (!zone) return;
   zone.classList.add('uploaded');
-  // 更新标签显示已选文件名
+  // 更新标签显示状态
   var label = zone.querySelector('.upload-label');
   if (label) {
     var icon = type === 'cert' ? '📜' : '👥';
-    var title = type === 'cert' ? '农村集体经济组织登记证书' : '成员名册';
-    label.innerHTML = '<div style="font-size:36px;margin-bottom:8px">' + icon + '</div>' +
-      '<div style="color:var(--status-green);font-weight:500">' + fileName + '</div>' +
-      '<div style="font-size:11px;color:var(--status-green)">✓ 已选择</div>';
+    if (isUploadingNow) {
+      label.innerHTML = '<div style="font-size:36px;margin-bottom:8px">' + icon + '</div>' +
+        '<div style="color:var(--status-orange);font-weight:500">⏳ 正在上传...</div>' +
+        '<div style="font-size:11px;color:var(--status-orange)">请稍候</div>';
+    } else if (fileName) {
+      label.innerHTML = '<div style="font-size:36px;margin-bottom:8px">' + icon + '</div>' +
+        '<div style="color:var(--status-green);font-weight:500">' + fileName + '</div>' +
+        '<div style="font-size:11px;color:var(--status-green)">✓ 已上传</div>';
+    }
   }
 }
 
@@ -2560,7 +2633,7 @@ function renderUploadedFiles() {
       '<span style="font-size:18px">' + (f.type==='cert'?'📄':'👥') + '</span>' +
       '<span style="flex:1;font-size:13px;color:var(--text-dark)">' + f.name + '</span>' +
       (sizeStr ? '<span style="font-size:11px;color:var(--text-light)">' + sizeStr + '</span>' : '') +
-      '<span style="color:var(--status-green);font-size:12px">✓ 已选择</span>' +
+      '<span style="color:var(--status-green);font-size:12px">✓ 已上传至云端</span>' +
       '</div>';
   }
   html += '</div>';
@@ -2589,13 +2662,14 @@ async function submitListing() {
     showToast('请先勾选提交声明', 'error');
     return;
   }
-  // 验证必须选择了真实文件
-  var certInput = document.getElementById('fileInputCert');
-  var membersInput = document.getElementById('fileInputMembers');
-  var hasCertFile = certInput && certInput.files && certInput.files.length > 0;
-  var hasMembersFile = membersInput && membersInput.files && membersInput.files.length > 0;
-  if (!hasCertFile && !hasMembersFile) {
-    showToast('请至少选择一份证明材料文件后再提交', 'error');
+  // 验证文件已上传到云端（必须有 fileID）
+  if (uploadedFiles.length === 0) {
+    showToast('请至少上传一份证明材料文件后再提交', 'error');
+    return;
+  }
+  var hasUploaded = uploadedFiles.some(function(f) { return f.fileID; });
+  if (!hasUploaded) {
+    showToast('文件尚未上传成功，请重新上传后再提交', 'error');
     return;
   }
   showLoading(true);
@@ -2710,9 +2784,19 @@ async function renderReviewList(type) {
       if (type === 'listing') {
         var filesInfo = '';
         if (app.files && app.files.length > 0) {
-          filesInfo = '<div class="review-info" style="grid-column:1/-1"><span class="review-label">证明材料</span><span style="display:flex;gap:6px;flex-wrap:wrap">';
+          filesInfo = '<div class="review-info" style="grid-column:1/-1"><span class="review-label">证明材料</span><span style="display:flex;gap:8px;flex-wrap:wrap">';
           for (var fi = 0; fi < app.files.length; fi++) {
-            filesInfo += '<span style="background:var(--bg-light);padding:3px 8px;border-radius:4px;font-size:12px">' + (app.files[fi].type === 'cert' ? '📜 ' : '👥 ') + (app.files[fi].name || '未知文件') + '</span>';
+            var fItem = app.files[fi];
+            var icon = fItem.type === 'cert' ? '📜' : '👥';
+            var fId = fItem.fileID || '';
+            // 生成唯一 DOM ID，后面异步获取下载链接并注入
+            var linkId = 'fileLink_' + app._id + '_' + fi;
+            if (fId) {
+              // 有 fileID → 创建占位链接，异步获取真实下载URL
+              filesInfo += '<a id="' + linkId + '" href="#" onclick="openFileLink(\'' + fId + '\',\'' + linkId + '\');return false" style="background:var(--bg-light);padding:4px 10px;border-radius:4px;font-size:12px;color:var(--text-dark);cursor:pointer;border:1px solid var(--border-light);text-decoration:none;display:inline-flex;align-items:center;gap:4px">' + icon + ' ' + (fItem.name || '文件') + ' <span style="color:var(--green-primary);font-size:10px">📥 下载</span></a>';
+            } else {
+              filesInfo += '<span style="background:var(--bg-light);padding:3px 8px;border-radius:4px;font-size:12px">' + icon + ' ' + (fItem.name || '未知文件') + '</span>';
+            }
           }
           filesInfo += '</span></div>';
         }
@@ -2880,6 +2964,32 @@ async function approveApplication(appId, type) {
     showToast('操作失败：' + (e.message || '未知错误'), 'error');
   }
   showLoading(false);
+}
+
+// 管理员点击文件下载链接 → 获取临时下载URL → 在新窗口打开
+async function openFileLink(fileID, linkId) {
+  var linkEl = document.getElementById(linkId);
+  if (!fileID) { showToast('文件信息缺失', 'error'); return; }
+  // 先尝试用已有的 downloadUrl
+  var existingUrl = linkEl ? linkEl.getAttribute('data-url') : '';
+  if (existingUrl) {
+    window.open(existingUrl, '_blank');
+    return;
+  }
+  showToast('正在获取文件链接...', 'success');
+  try {
+    var url = await getFileDownloadUrl(fileID);
+    if (url) {
+      // 缓存URL到链接元素（避免重复请求）
+      if (linkEl) linkEl.setAttribute('data-url', url);
+      window.open(url, '_blank');
+    } else {
+      showToast('无法获取文件下载链接，请稍后重试', 'error');
+    }
+  } catch(e) {
+    console.error('[FileLink] 获取URL失败:', e);
+    showToast('获取文件链接失败：' + (e.message || '网络错误'), 'error');
+  }
 }
 
 async function rejectApplication(appId, type) {
