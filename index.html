@@ -270,8 +270,13 @@ body{display:flex;flex-direction:row}
 .detail-item .d-value{font-size:14px;color:var(--text-dark);font-weight:500}
 
 /* ===== Upload Zone ===== */
-.upload-zone{border:2px dashed var(--border-light);border-radius:var(--radius-md);padding:30px;text-align:center;background:var(--bg-light);cursor:pointer;transition:all 0.2s}
+.upload-zone{border:2px dashed var(--border-light);border-radius:var(--radius-md);padding:30px;text-align:center;background:var(--bg-light);cursor:pointer;transition:all 0.2s;position:relative}
 .upload-zone:hover{border-color:var(--green-primary);background:rgba(20,115,28,0.03)}
+.upload-zone.uploaded{border-color:var(--status-green);border-style:solid;background:rgba(34,197,94,0.05)}
+.upload-zone .upload-input{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.upload-zone .upload-label{pointer-events:none}
+.upload-zone .remove-btn{position:absolute;top:6px;right:8px;background:rgba(0,0,0,0.1);color:#FFF;border:none;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;z-index:2;display:none}
+.upload-zone.uploaded .remove-btn{display:block}
 
 /* ===== Factor Subpage ===== */
 .factor-subpage{display:none}.factor-subpage.active{display:block}
@@ -889,11 +894,19 @@ body{display:flex;flex-direction:row}
         <div style="font-size:12px;color:#666;line-height:1.6">资产明细等核心数据将由管理员在审核通过后依据凭证进行专业录入。本步骤仅需上传相关证明文件。</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-        <div class="upload-zone" onclick="simulateUpload('cert')" style="border:2px dashed var(--border-light);border-radius:var(--radius-md);padding:30px;text-align:center;cursor:pointer">
-          <div style="font-size:36px;margin-bottom:8px">📜</div><div>农村集体经济组织登记证书</div><div style="font-size:11px;color:#999">PDF/JPG ≤10MB</div>
+        <div class="upload-zone" id="uploadZoneCert" onclick="triggerFileUpload('cert')">
+          <input type="file" class="upload-input" id="fileInputCert" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload(this,'cert')" style="display:none">
+          <div class="upload-label">
+            <div style="font-size:36px;margin-bottom:8px">📜</div><div>农村集体经济组织登记证书</div><div style="font-size:11px;color:#999">PDF/JPG ≤10MB（点击选择文件）</div>
+          </div>
+          <button class="remove-btn" onclick="removeUpload('cert',event)">✕</button>
         </div>
-        <div class="upload-zone" onclick="simulateUpload('members')" style="border:2px dashed var(--border-light);border-radius:var(--radius-md);padding:30px;text-align:center;cursor:pointer">
-          <div style="font-size:36px;margin-bottom:8px">👥</div><div>成员名册</div><div style="font-size:11px;color:#999">PDF/Excel ≤10MB</div>
+        <div class="upload-zone" id="uploadZoneMembers" onclick="triggerFileUpload('members')">
+          <input type="file" class="upload-input" id="fileInputMembers" accept=".pdf,.xlsx,.xls,.csv" onchange="handleFileUpload(this,'members')" style="display:none">
+          <div class="upload-label">
+            <div style="font-size:36px;margin-bottom:8px">👥</div><div>成员名册</div><div style="font-size:11px;color:#999">PDF/Excel ≤10MB（点击选择文件）</div>
+          </div>
+          <button class="remove-btn" onclick="removeUpload('members',event)">✕</button>
         </div>
       </div>
       <div id="uploadedFiles" style="margin-bottom:16px"></div>
@@ -2428,7 +2441,15 @@ function listingStep(step) {
   }
   // 验证步骤 2 -> 3
   if (step === 3) {
-    if (uploadedFiles.length === 0) { showToast('请至少上传一份证明材料', 'error'); return; }
+    // 检查是否真正选择了文件（文件输入框必须有值）
+    var certInput = document.getElementById('fileInputCert');
+    var membersInput = document.getElementById('fileInputMembers');
+    var hasCertFile = certInput && certInput.files && certInput.files.length > 0;
+    var hasMembersFile = membersInput && membersInput.files && membersInput.files.length > 0;
+    if (!hasCertFile && !hasMembersFile) {
+      showToast('请至少选择并上传一份证明材料文件', 'error');
+      return;
+    }
     renderListingSummary();
   }
   currentListingStep = step;
@@ -2451,14 +2472,80 @@ function listingStep(step) {
   }
 }
 
-function simulateUpload(type) {
-  showToast('正在上传 ' + type + ' 文件...', 'success');
-  setTimeout(function() {
-    var fileName = type === 'cert' ? '农村集体经济组织登记证书.pdf' : '成员名册.xlsx';
-    uploadedFiles.push({ type: type, name: fileName, uploadedAt: new Date().toLocaleString('zh-CN') });
-    renderUploadedFiles();
-    showToast('文件 "' + fileName + '" 上传成功！', 'success');
-  }, 1000);
+function triggerFileUpload(type) {
+  var inputId = type === 'cert' ? 'fileInputCert' : 'fileInputMembers';
+  var input = document.getElementById(inputId);
+  if (input) input.click();
+}
+
+function handleFileUpload(input, type) {
+  var file = input.files && input.files[0];
+  if (!file) { showToast('请选择一个文件', 'error'); return; }
+  // 文件大小校验 ≤10MB
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('文件大小不能超过10MB，请重新选择', 'error');
+    input.value = '';
+    return;
+  }
+  // 文件类型校验
+  var ext = file.name.split('.').pop().toLowerCase();
+  var allowedExts = type === 'cert' ? ['pdf','jpg','jpeg','png'] : ['pdf','xlsx','xls','csv'];
+  if (allowedExts.indexOf(ext) === -1) {
+    showToast('不支持的文件格式，请选择 ' + allowedExts.join('/') + ' 格式', 'error');
+    input.value = '';
+    return;
+  }
+  // 移除同类型的旧文件（如果已有）
+  uploadedFiles = uploadedFiles.filter(function(f) { return f.type !== type; });
+  uploadedFiles.push({ type: type, name: file.name, size: file.size, uploadedAt: new Date().toLocaleString('zh-CN') });
+  renderUploadedFiles();
+  // 更新上传区域样式
+  updateUploadZoneStyle(type, file.name);
+  showToast('文件 "' + file.name + '" 已选择，请继续下一步', 'success');
+}
+
+function removeUpload(type, evt) {
+  if (evt) evt.stopPropagation();
+  uploadedFiles = uploadedFiles.filter(function(f) { return f.type !== type; });
+  renderUploadedFiles();
+  // 重置上传区域和文件输入
+  var zoneId = type === 'cert' ? 'uploadZoneCert' : 'uploadZoneMembers';
+  var inputId = type === 'cert' ? 'fileInputCert' : 'fileInputMembers';
+  var zone = document.getElementById(zoneId);
+  var input = document.getElementById(inputId);
+  if (zone) { zone.classList.remove('uploaded'); }
+  if (input) { input.value = ''; }
+  resetUploadZoneLabel(type);
+  showToast('已移除文件', 'success');
+}
+
+function updateUploadZoneStyle(type, fileName) {
+  var zoneId = type === 'cert' ? 'uploadZoneCert' : 'uploadZoneMembers';
+  var zone = document.getElementById(zoneId);
+  if (!zone) return;
+  zone.classList.add('uploaded');
+  // 更新标签显示已选文件名
+  var label = zone.querySelector('.upload-label');
+  if (label) {
+    var icon = type === 'cert' ? '📜' : '👥';
+    var title = type === 'cert' ? '农村集体经济组织登记证书' : '成员名册';
+    label.innerHTML = '<div style="font-size:36px;margin-bottom:8px">' + icon + '</div>' +
+      '<div style="color:var(--status-green);font-weight:500">' + fileName + '</div>' +
+      '<div style="font-size:11px;color:var(--status-green)">✓ 已选择</div>';
+  }
+}
+
+function resetUploadZoneLabel(type) {
+  var zoneId = type === 'cert' ? 'uploadZoneCert' : 'uploadZoneMembers';
+  var zone = document.getElementById(zoneId);
+  if (!zone) return;
+  var label = zone.querySelector('.upload-label');
+  if (label) {
+    var icon = type === 'cert' ? '📜' : '👥';
+    var title = type === 'cert' ? '农村集体经济组织登记证书' : '成员名册';
+    var hint = type === 'cert' ? 'PDF/JPG ≤10MB（点击选择文件）' : 'PDF/Excel ≤10MB（点击选择文件）';
+    label.innerHTML = '<div style="font-size:36px;margin-bottom:8px">' + icon + '</div><div>' + title + '</div><div style="font-size:11px;color:#999">' + hint + '</div>';
+  }
 }
 
 function renderUploadedFiles() {
@@ -2468,11 +2555,12 @@ function renderUploadedFiles() {
   var html = '<div style="display:flex;flex-direction:column;gap:8px">';
   for (var i = 0; i < uploadedFiles.length; i++) {
     var f = uploadedFiles[i];
+    var sizeStr = f.size ? (f.size < 1024*1024 ? (f.size/1024).toFixed(1) + 'KB' : (f.size/1024/1024).toFixed(2) + 'MB') : '';
     html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-light);border-radius:var(--radius-sm)">' +
       '<span style="font-size:18px">' + (f.type==='cert'?'📄':'👥') + '</span>' +
       '<span style="flex:1;font-size:13px;color:var(--text-dark)">' + f.name + '</span>' +
-      '<span style="font-size:11px;color:var(--text-light)">' + f.uploadedAt + '</span>' +
-      '<span style="color:var(--status-green);font-size:12px">✓ 已上传</span>' +
+      (sizeStr ? '<span style="font-size:11px;color:var(--text-light)">' + sizeStr + '</span>' : '') +
+      '<span style="color:var(--status-green);font-size:12px">✓ 已选择</span>' +
       '</div>';
   }
   html += '</div>';
@@ -2501,9 +2589,19 @@ async function submitListing() {
     showToast('请先勾选提交声明', 'error');
     return;
   }
+  // 验证必须选择了真实文件
+  var certInput = document.getElementById('fileInputCert');
+  var membersInput = document.getElementById('fileInputMembers');
+  var hasCertFile = certInput && certInput.files && certInput.files.length > 0;
+  var hasMembersFile = membersInput && membersInput.files && membersInput.files.length > 0;
+  if (!hasCertFile && !hasMembersFile) {
+    showToast('请至少选择一份证明材料文件后再提交', 'error');
+    return;
+  }
   showLoading(true);
   try {
     var orgName = ((document.getElementById('orgName') || {}).value || '').trim();
+
     var legalRep = ((document.getElementById('legalRep') || {}).value || '').trim();
     var district = ((document.getElementById('regDistrict') || {}).value || '').trim();
     var phone = ((document.getElementById('contactPhone') || {}).value || '').trim();
@@ -2513,6 +2611,7 @@ async function submitListing() {
     var appRec = {
       type: 'listing',
       orgName: orgName,
+      orgCode: currentUser ? (currentUser.orgCode || '') : '',
       legalRep: legalRep,
       district: district,
       contactPhone: phone,
@@ -2536,6 +2635,17 @@ async function submitListing() {
 
     showToast('挂牌申请提交成功！请等待审核', 'success');
     uploadedFiles = [];
+    // 重置上传区域 UI
+    resetUploadZoneLabel('cert');
+    resetUploadZoneLabel('members');
+    var zc = document.getElementById('uploadZoneCert');
+    var zm = document.getElementById('uploadZoneMembers');
+    var ic = document.getElementById('fileInputCert');
+    var im = document.getElementById('fileInputMembers');
+    if (zc) zc.classList.remove('uploaded');
+    if (zm) zm.classList.remove('uploaded');
+    if (ic) ic.value = '';
+    if (im) im.value = '';
     currentListingStep = 1;
     listingStep(1);
     setTimeout(function() { navTo(1); }, 1500);
@@ -2598,11 +2708,20 @@ async function renderReviewList(type) {
       // 根据申请类型展示不同信息
       var detailHtml = '';
       if (type === 'listing') {
+        var filesInfo = '';
+        if (app.files && app.files.length > 0) {
+          filesInfo = '<div class="review-info" style="grid-column:1/-1"><span class="review-label">证明材料</span><span style="display:flex;gap:6px;flex-wrap:wrap">';
+          for (var fi = 0; fi < app.files.length; fi++) {
+            filesInfo += '<span style="background:var(--bg-light);padding:3px 8px;border-radius:4px;font-size:12px">' + (app.files[fi].type === 'cert' ? '📜 ' : '👥 ') + (app.files[fi].name || '未知文件') + '</span>';
+          }
+          filesInfo += '</span></div>';
+        }
         detailHtml =
           '<div class="review-info"><span class="review-label">组织名称</span><span>' + (app.orgName || '—') + '</span></div>' +
           '<div class="review-info"><span class="review-label">法定代表人</span><span>' + (app.legalRep || '—') + '</span></div>' +
           '<div class="review-info"><span class="review-label">所属区县</span><span>' + (app.district || '—') + '</span></div>' +
-          '<div class="review-info"><span class="review-label">联系电话</span><span>' + (app.contactPhone || app.phone || '—') + '</span></div>';
+          '<div class="review-info"><span class="review-label">联系电话</span><span>' + (app.contactPhone || app.phone || '—') + '</span></div>' +
+          filesInfo;
       } else if (type === 'finance') {
         detailHtml =
           '<div class="review-info"><span class="review-label">组织名称</span><span>' + (app.orgName || '—') + '</span></div>' +
@@ -2648,45 +2767,107 @@ async function approveApplication(appId, type) {
   if (!confirm('确认通过该申请？')) return;
   showLoading(true);
   try {
-    await db.collection('applications').doc(appId).update({ status: 'approved', reviewedAt: new Date(), reviewer: currentUser ? currentUser.username : 'admin' });
-
-    // 如果是要素对接申请，自动写入 factor_items 集合
-    if (type === 'factor') {
-      try {
-        // 先获取申请详情（用 doc().get() 更可靠）
-        var appRes = await db.collection('applications').doc(appId).get();
-        var app = (appRes.data && appRes.data.length > 0) ? appRes.data[0] : null;
-        if (!app) {
-          // fallback: where 查询
-          var fallbackRes = await db.collection('applications').where({ _id: appId }).limit(1).get();
-          app = (fallbackRes.data && fallbackRes.data.length > 0) ? fallbackRes.data[0] : null;
-        }
-        if (app) {
-          // 映射 factorType → factor_items.type
-          var typeMap = { 'technology': 'tech', 'talent': 'talent', 'data': 'data', 'capital': 'capital', 'tech': 'tech' };
-          var itemType = typeMap[app.factorType] || app.factorType || 'tech';
-          var typeLabels = { tech: '技术要素', talent: '人才要素', data: '数据要素', capital: '资本要素' };
-          await db.collection('factor_items').add({
-            name: app.factorName || app.name || '—',
-            type: itemType,
-            factorTypeLabel: app.factorTypeLabel || typeLabels[itemType] || itemType,
-            provider: app.provider || '—',
-            orgCode: app.orgCode || '',
-            orgName: app.orgName || '',
-            contact: app.contact || app.phone || '',
-            desc: app.desc || app.reason || '',
-            price: app.price || '面议',
-            status: 'available',
-            createdAt: new Date()
-          });
-          console.log('[Review] 要素已写入 factor_items:', app.factorName || app.name);
-        } else {
-          console.warn('[Review] 未找到申请记录:', appId);
-        }
-      } catch(e) { console.warn('[Review] factor_items写入失败:', e); showToast('要素数据写入失败，请手动添加：' + (e.message || '未知错误'), 'error'); }
+    // 先获取申请详情（审核前读取，因为审核后可能刷新列表导致丢失）
+    var appRes = await db.collection('applications').doc(appId).get();
+    var app = (appRes.data && appRes.data.length > 0) ? appRes.data[0] : null;
+    if (!app) {
+      var fallbackRes = await db.collection('applications').where({ _id: appId }).limit(1).get();
+      app = (fallbackRes.data && fallbackRes.data.length > 0) ? fallbackRes.data[0] : null;
     }
 
-    showToast('申请已通过！', 'success');
+    // 更新申请状态为 approved
+    await db.collection('applications').doc(appId).update({ status: 'approved', reviewedAt: new Date(), reviewer: currentUser ? currentUser.username : 'admin' });
+
+    // 如果是挂牌申请，自动赋码并写入 organizations 集合
+    if (type === 'listing' && app) {
+      try {
+        // 区县 → 行政区划代码映射
+        var districtCodeMap = {
+          '龙泉驿区': '510112', '新津区': '510132', '温江区': '510115',
+          '名山区': '511103', '丹棱县': '511124', '翠屏区': '511502'
+        };
+        var areaCode = districtCodeMap[app.district] || '510100';
+        // 生成序号：查询该区已有挂牌组织数量，递增
+        var existingOrgs = await db.collection('organizations').where({ district: app.district }).count();
+        var seq = ((existingOrgs.total || existingOrgs.data || 0) + 1);
+        var seqStr = seq < 10 ? '00' + seq : (seq < 100 ? '0' + seq : '' + seq);
+        var listingCode = 'NJC-' + areaCode + '-' + seqStr;
+
+        // 写入 organizations 集合
+        var newOrg = {
+          name: app.orgName || '—',
+          shortName: (app.orgName || '').replace(/农村集体经济组织$/, '').trim() || app.orgName || '—',
+          code: listingCode,
+          district: app.district || '—',
+          type: '集体经济组织',
+          legalPerson: app.legalRep || '—',
+          phone: app.contactPhone || '—',
+          address: app.address || '—',
+          members: app.members || 0,
+          status: 'listed',
+          listedAt: new Date().toLocaleDateString('zh-CN'),
+          createdAt: new Date(),
+          assets: [],
+          equityTotal: 0,
+          totalAssets: 0,
+          factors: [],
+          applicant: app.applicant || '—',
+          applicationId: appId,
+          files: app.files || []
+        };
+        await db.collection('organizations').add(newOrg);
+        console.log('[Review] 挂牌组织已写入 organizations，挂牌码:', listingCode);
+
+        // 更新申请记录中写入挂牌码
+        try {
+          await db.collection('applications').doc(appId).update({ listingCode: listingCode });
+        } catch(e) { console.warn('[Review] 更新申请挂牌码失败', e); }
+
+        // 添加动态
+        try {
+          await db.collection('news_feed').add({
+            content: '组织 «' + (app.orgName || '—') + '» 审核通过，挂牌码：' + listingCode + '，正式挂牌',
+            date: new Date().toLocaleDateString('zh-CN'),
+            createdAt: new Date(),
+          });
+        } catch(e) { console.warn('[Listing] 动态添加失败', e); }
+
+        // 刷新挂牌大厅
+        loadListingData();
+      } catch(e) {
+        console.warn('[Review] 挂牌组织写入失败:', e);
+        showToast('挂牌数据写入失败，请手动添加组织：' + (e.message || '未知错误'), 'error');
+      }
+    }
+
+    // 如果是要素对接申请，自动写入 factor_items 集合
+    if (type === 'factor' && app) {
+      try {
+        // 映射 factorType → factor_items.type
+        var typeMap = { 'technology': 'tech', 'talent': 'talent', 'data': 'data', 'capital': 'capital', 'tech': 'tech' };
+        var itemType = typeMap[app.factorType] || app.factorType || 'tech';
+        var fTypeLabels = { tech: '技术要素', talent: '人才要素', data: '数据要素', capital: '资本要素' };
+        await db.collection('factor_items').add({
+          name: app.factorName || app.name || '—',
+          type: itemType,
+          factorTypeLabel: app.factorTypeLabel || fTypeLabels[itemType] || itemType,
+          provider: app.provider || '—',
+          orgCode: app.orgCode || '',
+          orgName: app.orgName || '',
+          contact: app.contact || app.phone || '',
+          desc: app.desc || app.reason || '',
+          price: app.price || '面议',
+          status: 'available',
+          createdAt: new Date()
+        });
+        console.log('[Review] 要素已写入 factor_items:', app.factorName || app.name);
+      } catch(e) {
+        console.warn('[Review] factor_items写入失败:', e);
+        showToast('要素数据写入失败，请手动添加：' + (e.message || '未知错误'), 'error');
+      }
+    }
+
+    showToast(type === 'listing' ? '挂牌申请已通过，组织已赋码挂牌！' : '申请已通过！', 'success');
     renderReviewList(type);
     loadPendingCount();
     loadDashboardData();
